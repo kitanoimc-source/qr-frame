@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>QRサブレ フォトフレーム｜実機検証プロトタイプ</title>
+<style>
+:root{
+  --bg:#100e0c;
+  --panel:#1b1815;
+  --line:#332e28;
+  --text:#efe9e0;
+  --dim:#9c9288;
+  --accent:#e8b04b;
+  --danger:#e07a5f;
+  --stage-bg:#000;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;overflow:hidden;overscroll-behavior:none;}
+body{
+  background:var(--bg);color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP','Yu Gothic UI',sans-serif;
+  font-size:14px;line-height:1.5;
+  -webkit-user-select:none;user-select:none;
+}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;}
+
+#app{
+  height:100dvh;height:100vh;
+  display:flex;flex-direction:column;
+  padding-top:env(safe-area-inset-top);
+  padding-bottom:env(safe-area-inset-bottom);
+}
+
+/* ---------- header ---------- */
+#bar{
+  flex:none;display:flex;align-items:center;justify-content:space-between;
+  gap:10px;padding:9px 14px;border-bottom:1px solid var(--line);
+}
+#label{font-size:13.5px;font-weight:600;letter-spacing:.02em;}
+#label span{color:var(--dim);font-weight:400;margin-left:8px;font-size:11.5px;}
+.iconbtn{
+  flex:none;width:34px;height:34px;border-radius:9px;border:1px solid var(--line);
+  display:grid;place-items:center;font-size:12px;color:var(--dim);
+}
+.iconbtn.on{border-color:var(--accent);color:var(--accent);}
+
+/* ---------- stage ---------- */
+#stage{
+  flex:1;position:relative;overflow:hidden;background:var(--stage-bg);
+  touch-action:none;min-height:0;
+}
+#video,#still{
+  position:absolute;inset:0;width:100%;height:100%;
+  object-fit:cover;display:block;
+}
+#video.mirror{transform:scaleX(-1);}
+#still{display:none;}
+.frameimg{
+  position:absolute;left:50%;transform:translateX(-50%);
+  pointer-events:none;display:block;
+}
+#frameTop{top:0;}
+#frameBottom{bottom:0;}
+#stampLayer{position:absolute;inset:0;}
+.stamp{
+  position:absolute;transform-origin:50% 50%;
+  will-change:transform;touch-action:none;
+}
+.stamp img{display:block;width:100%;height:auto;pointer-events:none;}
+.stamp.sel::after{
+  content:"";position:absolute;inset:-6px;
+  border:1.5px dashed rgba(232,176,75,.9);border-radius:6px;
+}
+.del{
+  position:absolute;top:-13px;right:-13px;width:26px;height:26px;border-radius:50%;
+  background:var(--danger);color:#fff;font-size:14px;line-height:26px;text-align:center;
+  display:none;font-weight:700;
+}
+.stamp.sel .del{display:block;}
+
+/* notices */
+#notice{
+  position:absolute;left:14px;right:14px;top:14px;padding:12px 14px;border-radius:10px;
+  background:rgba(224,122,95,.94);color:#fff;font-size:12.5px;line-height:1.6;display:none;
+}
+#notice.show{display:block;}
+
+/* ---------- panel ---------- */
+#panel{flex:none;background:var(--panel);border-top:1px solid var(--line);}
+#modes{display:flex;gap:2px;padding:8px 12px 0;}
+#modes button{
+  padding:7px 16px;font-size:12.5px;font-weight:600;color:var(--dim);
+  border-bottom:2px solid transparent;
+}
+#modes button.on{color:var(--accent);border-bottom-color:var(--accent);}
+
+#tabs{display:flex;gap:6px;padding:9px 12px 0;overflow-x:auto;}
+#tabs button{
+  flex:none;padding:5px 13px;border-radius:999px;border:1px solid var(--line);
+  font-size:12px;color:var(--dim);
+}
+#tabs button.on{border-color:var(--accent);color:var(--accent);}
+
+.tray{display:flex;gap:8px;padding:10px 12px;overflow-x:auto;}
+.tray::-webkit-scrollbar{display:none;}
+.thumb{
+  flex:none;border-radius:9px;border:1.5px solid var(--line);
+  background:#26221d;display:grid;place-items:center;overflow:hidden;
+}
+.thumb.frame{width:54px;height:54px;font-size:10.5px;color:var(--dim);text-align:center;line-height:1.3;}
+.thumb.frame.on{border-color:var(--accent);color:var(--accent);}
+.thumb.stamp-th{width:52px;height:52px;padding:7px;}
+.thumb.stamp-th img{width:100%;height:100%;object-fit:contain;}
+
+#shutterbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:6px 22px 14px;
+}
+.sidebtn{
+  width:52px;height:52px;border-radius:13px;border:1px solid var(--line);
+  display:grid;place-items:center;font-size:10.5px;color:var(--dim);line-height:1.25;text-align:center;
+}
+#shutter{
+  width:70px;height:70px;border-radius:50%;background:var(--accent);
+  border:4px solid rgba(232,176,75,.28);background-clip:padding-box;
+}
+#shutter:active{transform:scale(.94);}
+
+/* ---------- result ---------- */
+#result{
+  position:fixed;inset:0;background:var(--bg);z-index:60;display:none;
+  flex-direction:column;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+}
+#result.show{display:flex;}
+#resultView{flex:1;display:grid;place-items:center;padding:14px;min-height:0;}
+#resultImg{max-width:100%;max-height:100%;border-radius:6px;display:block;}
+#resultActions{flex:none;padding:12px 16px 20px;display:flex;gap:10px;}
+#resultActions button{
+  flex:1;padding:15px 0;border-radius:12px;font-size:14.5px;font-weight:600;text-align:center;
+}
+#saveBtn{background:var(--accent);color:#191510;}
+#retakeBtn{border:1px solid var(--line);color:var(--text);}
+#saveHint{padding:0 16px 4px;font-size:11.5px;color:var(--dim);text-align:center;min-height:18px;}
+
+/* ---------- debug ---------- */
+#debug{
+  position:absolute;left:10px;right:10px;bottom:10px;z-index:40;
+  background:rgba(10,9,8,.93);border:1px solid var(--line);border-radius:10px;
+  padding:11px 13px;font-size:11px;line-height:1.85;display:none;
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:#cfc6ba;
+}
+#debug.show{display:block;}
+#debug b{color:var(--accent);font-weight:600;}
+#debug .ng{color:var(--danger);}
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div id="bar">
+    <div id="label">サンプル動物園<span>検証用プロトタイプ</span></div>
+    <button class="iconbtn" id="dbgBtn" aria-label="動作情報">i</button>
+  </div>
+
+  <div id="stage">
+    <video id="video" playsinline muted autoplay></video>
+    <img id="still" alt="">
+    <img class="frameimg" id="frameTop" alt="">
+    <img class="frameimg" id="frameBottom" alt="">
+    <div id="stampLayer"></div>
+    <div id="notice"></div>
+    <div id="debug"></div>
+  </div>
+
+  <div id="panel">
+    <div id="modes">
+      <button data-mode="frame" class="on">フレーム</button>
+      <button data-mode="stamp">スタンプ</button>
+    </div>
+    <div id="tabs" hidden></div>
+    <div class="tray" id="tray"></div>
+    <div id="shutterbar">
+      <button class="sidebtn" id="flipBtn">カメラ<br>切替</button>
+      <button id="shutter" aria-label="撮影"></button>
+      <button class="sidebtn" id="pickBtn">写真を<br>選ぶ</button>
+    </div>
+  </div>
+</div>
+
+<div id="result">
+  <div id="resultView"><img id="resultImg" alt="合成結果"></div>
+  <div id="saveHint"></div>
+  <div id="resultActions">
+    <button id="retakeBtn">撮り直す</button>
+    <button id="saveBtn">保存・共有</button>
+  </div>
+</div>
+
+<input type="file" id="fileInput" accept="image/*" hidden>
+<canvas id="out" hidden></canvas>
+
+<script>
+/* =========================================================================
+   QRサブレ フォトフレーム ─ 実機検証プロトタイプ
+   ダミー素材（SVG data URI）内蔵。本番はCONFIGのsrcをPNGパスに差し替える。
+   ========================================================================= */
+
+/* ---------- ダミー素材生成 ---------- */
+const svg = s => 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(s);
+
+function dummyFrame(anchor, bg, accent, text){
+  // 実素材と同じ想定：横1080 / 高さ260 の帯、周囲は透過
+  const r = anchor === 'top'
+    ? '<path d="M0 0h1080v190q-540 110-1080 0z" fill="'+bg+'"/>'
+    : '<path d="M0 260h1080V70q-540-110-1080 0z" fill="'+bg+'"/>';
+  const ty = anchor === 'top' ? 92 : 196;
+  return svg('<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="260" viewBox="0 0 1080 260">'
+    + r
+    + '<text x="540" y="'+ty+'" text-anchor="middle" font-family="sans-serif" font-size="58" font-weight="700" fill="'+accent+'">'+text+'</text>'
+    + '</svg>');
+}
+function dummyStamp(body){
+  return svg('<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">'+body+'</svg>');
+}
+const S = {
+  star:  dummyStamp('<path d="M256 40l62 132 145 20-105 101 25 144-127-68-127 68 25-144L49 192l145-20z" fill="#f2c14e" stroke="#8a6a1e" stroke-width="14" stroke-linejoin="round"/>'),
+  heart: dummyStamp('<path d="M256 452S54 330 54 200c0-64 50-112 110-112 40 0 72 22 92 54 20-32 52-54 92-54 60 0 110 48 110 112 0 130-202 252-202 252z" fill="#e2725b" stroke="#8f3b2c" stroke-width="14"/>'),
+  paw:   dummyStamp('<g fill="#7a5c3e"><circle cx="150" cy="160" r="52"/><circle cx="256" cy="120" r="56"/><circle cx="362" cy="160" r="52"/><circle cx="420" cy="268" r="46"/><path d="M256 220c72 0 132 56 132 116s-60 76-132 76-132-16-132-76 60-116 132-116z"/></g>'),
+  leaf:  dummyStamp('<path d="M420 92C240 92 116 190 116 320c0 44 16 76 16 76s40-140 268-208c0 0-176 74-224 232 0 0 244 44 244-208 0-64 0-120 0-120z" fill="#5d8a52" stroke="#33502d" stroke-width="12"/>'),
+  sun:   dummyStamp('<g stroke="#e8a33d" stroke-width="26" stroke-linecap="round"><path d="M256 40v58M256 414v58M40 256h58M414 256h58M103 103l41 41M368 368l41 41M409 103l-41 41M144 368l-41 41"/></g><circle cx="256" cy="256" r="104" fill="#f2c14e" stroke="#c98a24" stroke-width="16"/>'),
+  cloud: dummyStamp('<path d="M148 372c-50 0-90-38-90-86s40-86 90-86c6 0 12 0 18 2 20-52 72-88 132-88 78 0 142 60 142 134 0 4 0 8 0 12 38 10 66 44 66 84 0 48-40 28-90 28z" fill="#eef2f6" stroke="#8fa3b8" stroke-width="14"/>'),
+  bubbleA: dummyStamp('<path d="M76 96h360a36 36 0 0136 36v192a36 36 0 01-36 36H262l-96 82v-82H76a36 36 0 01-36-36V132a36 36 0 0136-36z" fill="#fff" stroke="#2f2a24" stroke-width="16"/><text x="256" y="266" text-anchor="middle" font-family="sans-serif" font-size="96" font-weight="700" fill="#2f2a24">たのしい</text>'),
+  bubbleB: dummyStamp('<ellipse cx="256" cy="216" rx="212" ry="140" fill="#fff" stroke="#2f2a24" stroke-width="16"/><path d="M180 336l-32 108 116-78z" fill="#fff" stroke="#2f2a24" stroke-width="16" stroke-linejoin="round"/><text x="256" y="248" text-anchor="middle" font-family="sans-serif" font-size="100" font-weight="700" fill="#2f2a24">すき！</text>'),
+  bubbleC: dummyStamp('<path d="M256 44l44 74 84-24-24 84 74 44-74 44 24 84-84-24-44 74-44-74-84 24 24-84-74-44 74-44-24-84 84 24z" fill="#f2c14e" stroke="#8a6a1e" stroke-width="14" stroke-linejoin="round"/><text x="256" y="286" text-anchor="middle" font-family="sans-serif" font-size="88" font-weight="700" fill="#5c4415">記念</text>'),
+  ribbon: dummyStamp('<path d="M256 244l-140-96v220l140-96 140 96V148z" fill="#c0563f" stroke="#7d3325" stroke-width="14" stroke-linejoin="round"/>'),
+  flower: dummyStamp('<g fill="#e8869b"><circle cx="256" cy="136" r="70"/><circle cx="376" cy="222" r="70"/><circle cx="330" cy="362" r="70"/><circle cx="182" cy="362" r="70"/><circle cx="136" cy="222" r="70"/></g><circle cx="256" cy="262" r="58" fill="#f2c14e"/>'),
+  crown: dummyStamp('<path d="M78 372V168l80 66 98-124 98 124 80-66v204z" fill="#f2c14e" stroke="#a87f24" stroke-width="16" stroke-linejoin="round"/><circle cx="158" cy="150" r="26" fill="#e2725b"/><circle cx="256" cy="106" r="26" fill="#e2725b"/><circle cx="354" cy="150" r="26" fill="#e2725b"/>')
+};
+
+/* ---------- 設定（本番はここだけ差し替える） ---------- */
+const CONFIG = {
+  label: 'サンプル動物園',
+  frames: [
+    { id:'none', name:'なし',  top:null, bottom:null },
+    { id:'f1', name:'A', top:dummyFrame('top','#7a4034','#f6efe6','SAMPLE ZOO'),    bottom:dummyFrame('bottom','#7a4034','#f6efe6','QR SABLE') },
+    { id:'f2', name:'B', top:dummyFrame('top','#3f5d46','#eef4ee','サンプル動物園'), bottom:dummyFrame('bottom','#3f5d46','#eef4ee','2026') },
+    { id:'f3', name:'C', top:dummyFrame('top','#2f4a68','#eaf0f7','ZOO PHOTO'),      bottom:dummyFrame('bottom','#2f4a68','#eaf0f7','MEMORY') }
+  ],
+  stampTabs: [
+    { name:'どうぶつ', stamps:[{id:'paw',src:S.paw},{id:'leaf',src:S.leaf},{id:'flower',src:S.flower},{id:'crown',src:S.crown}] },
+    { name:'かざり',   stamps:[{id:'star',src:S.star},{id:'heart',src:S.heart},{id:'sun',src:S.sun},{id:'cloud',src:S.cloud},{id:'ribbon',src:S.ribbon}] },
+    { name:'ふきだし', stamps:[{id:'bubbleA',src:S.bubbleA},{id:'bubbleB',src:S.bubbleB},{id:'bubbleC',src:S.bubbleC}] }
+  ],
+  frameMaxRatio: 0.40,   // 上下フレーム各々の高さ上限（ステージ高に対する比率）
+  stampBaseWidth: 118,   // スタンプ初期表示幅(CSS px)
+  outputMaxWidth: 1440,  // 出力画像の最大横幅
+  jpegQuality: 0.92
+};
+
+/* ---------- 要素 ---------- */
+const $ = id => document.getElementById(id);
+const stage=$('stage'), video=$('video'), still=$('still');
+const fTop=$('frameTop'), fBottom=$('frameBottom'), stampLayer=$('stampLayer');
+const tray=$('tray'), tabs=$('tabs'), modes=$('modes');
+const outCanvas=$('out'), result=$('result'), resultImg=$('resultImg'), saveHint=$('saveHint');
+const notice=$('notice'), debug=$('debug');
+
+/* ---------- 状態 ---------- */
+const state = {
+  mode:'frame',
+  frameIndex:1,
+  tabIndex:0,
+  facing:'environment',
+  stream:null,
+  stamps:[],          // {id, img, x, y, scale, rot, w, h, el}
+  selected:null,
+  source:'camera',    // 'camera' | 'still'
+  stillImg:null,
+  lastBlob:null,
+  seq:0
+};
+const imgCache = new Map();
+function loadImg(src){
+  if(imgCache.has(src)) return imgCache.get(src);
+  const p = new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=src; });
+  imgCache.set(src,p); return p;
+}
+
+/* ---------- 共通レイアウト計算（プレビューと出力で必ず同じ関数を使う） ---------- */
+function coverRect(sw,sh,dw,dh){
+  const s = Math.max(dw/sw, dh/sh);
+  const w = sw*s, h = sh*s;
+  return { x:(dw-w)/2, y:(dh-h)/2, w, h };
+}
+function frameRect(imgW,imgH,stageW,stageH,anchor){
+  const maxH = stageH * CONFIG.frameMaxRatio;
+  let w = stageW, h = stageW * imgH / imgW;
+  if(h > maxH){ h = maxH; w = h * imgW / imgH; }
+  return { x:(stageW-w)/2, y: anchor==='top' ? 0 : stageH-h, w, h };
+}
+
+/* ---------- フレーム適用 ---------- */
+async function applyFrame(){
+  const f = CONFIG.frames[state.frameIndex];
+  for(const [el,src,anchor] of [[fTop,f.top,'top'],[fBottom,f.bottom,'bottom']]){
+    if(!src){ el.style.display='none'; el.removeAttribute('src'); continue; }
+    const im = await loadImg(src);
+    el.src = src; el.style.display='block';
+    const r = frameRect(im.naturalWidth, im.naturalHeight, stage.clientWidth, stage.clientHeight, anchor);
+    el.style.width = r.w+'px';
+    el.style.height = r.h+'px';
+  }
+  renderTray();
+}
+
+/* ---------- スタンプ ---------- */
+async function addStamp(src){
+  const im = await loadImg(src);
+  const w = CONFIG.stampBaseWidth;
+  const h = w * im.naturalHeight / im.naturalWidth;
+  const el = document.createElement('div');
+  el.className = 'stamp';
+  el.style.width = w+'px';
+  el.innerHTML = '<img src="'+src+'" alt=""><div class="del">×</div>';
+  const s = {
+    key: ++state.seq, src, img: im, w, h,
+    x: stage.clientWidth/2,
+    y: stage.clientHeight/2 + (Math.random()*60-30),
+    scale: 1, rot: 0, el
+  };
+  stampLayer.appendChild(el);
+  state.stamps.push(s);
+  bindStamp(s);
+  select(s);
+  place(s);
+}
+function place(s){
+  s.el.style.left = (s.x - s.w/2) + 'px';
+  s.el.style.top  = (s.y - s.h/2) + 'px';
+  s.el.style.transform = 'rotate('+s.rot+'rad) scale('+s.scale+')';
+}
+function select(s){
+  state.stamps.forEach(o=>o.el.classList.toggle('sel', o===s));
+  state.selected = s;
+  if(s) stampLayer.appendChild(s.el); // 最前面へ
+}
+function removeStamp(s){
+  s.el.remove();
+  state.stamps = state.stamps.filter(o=>o!==s);
+  if(state.selected===s) state.selected=null;
+}
+function bindStamp(s){
+  const pts = new Map();
+  let start = null;
+
+  s.el.addEventListener('pointerdown', e=>{
+    if(e.target.classList.contains('del')){ removeStamp(s); return; }
+    e.preventDefault();
+    s.el.setPointerCapture(e.pointerId);
+    pts.set(e.pointerId, {x:e.clientX, y:e.clientY});
+    select(s);
+    start = snapshot();
+  });
+  s.el.addEventListener('pointermove', e=>{
+    if(!pts.has(e.pointerId)) return;
+    e.preventDefault();
+    pts.set(e.pointerId, {x:e.clientX, y:e.clientY});
+    const arr = [...pts.values()];
+    if(!start) return;
+    if(arr.length === 1){
+      s.x = start.x + (arr[0].x - start.p[0].x);
+      s.y = start.y + (arr[0].y - start.p[0].y);
+    } else if(arr.length >= 2){
+      const [a,b] = arr, [a0,b0] = start.p;
+      const d  = Math.hypot(b.x-a.x, b.y-a.y);
+      const d0 = Math.hypot(b0.x-a0.x, b0.y-a0.y);
+      const ang  = Math.atan2(b.y-a.y, b.x-a.x);
+      const ang0 = Math.atan2(b0.y-a0.y, b0.x-a0.x);
+      s.scale = Math.min(6, Math.max(0.25, start.scale * (d/(d0||1))));
+      s.rot = start.rot + (ang - ang0);
+      const mid  = {x:(a.x+b.x)/2, y:(a.y+b.y)/2};
+      const mid0 = {x:(a0.x+b0.x)/2, y:(a0.y+b0.y)/2};
+      s.x = start.x + (mid.x - mid0.x);
+      s.y = start.y + (mid.y - mid0.y);
+    }
+    place(s);
+  });
+  const end = e=>{
+    pts.delete(e.pointerId);
+    if(pts.size) start = snapshot(); else start = null;
+  };
+  s.el.addEventListener('pointerup', end);
+  s.el.addEventListener('pointercancel', end);
+
+  function snapshot(){
+    return { x:s.x, y:s.y, scale:s.scale, rot:s.rot, p:[...pts.values()] };
+  }
+}
+stage.addEventListener('pointerdown', e=>{ if(e.target===stage||e.target===stampLayer) select(null); });
+
+/* ---------- UI ---------- */
+function renderTray(){
+  tray.innerHTML='';
+  if(state.mode==='frame'){
+    tabs.hidden = true;
+    CONFIG.frames.forEach((f,i)=>{
+      const b=document.createElement('button');
+      b.className='thumb frame'+(i===state.frameIndex?' on':'');
+      b.textContent=f.name;
+      b.onclick=()=>{ state.frameIndex=i; applyFrame(); };
+      tray.appendChild(b);
+    });
+  } else {
+    tabs.hidden = false;
+    tabs.innerHTML='';
+    CONFIG.stampTabs.forEach((t,i)=>{
+      const b=document.createElement('button');
+      b.className = i===state.tabIndex ? 'on':'';
+      b.textContent=t.name;
+      b.onclick=()=>{ state.tabIndex=i; renderTray(); };
+      tabs.appendChild(b);
+    });
+    CONFIG.stampTabs[state.tabIndex].stamps.forEach(st=>{
+      const b=document.createElement('button');
+      b.className='thumb stamp-th';
+      b.innerHTML='<img src="'+st.src+'" alt="">';
+      b.onclick=()=>addStamp(st.src);
+      tray.appendChild(b);
+    });
+  }
+}
+modes.querySelectorAll('button').forEach(b=>{
+  b.onclick=()=>{
+    state.mode=b.dataset.mode;
+    modes.querySelectorAll('button').forEach(o=>o.classList.toggle('on',o===b));
+    renderTray();
+  };
+});
+
+/* ---------- カメラ ---------- */
+function showNotice(html){ notice.innerHTML=html; notice.classList.add('show'); }
+function hideNotice(){ notice.classList.remove('show'); }
+
+async function startCamera(){
+  if(!window.isSecureContext){
+    showNotice('<b>HTTPSでの配信が必要です。</b><br>このファイルをローカルで直接開くとカメラは起動しません。'
+      +'Cloudflare Pages / GitHub Pages などのHTTPS環境に置いて開いてください。'
+      +'<br>「写真を選ぶ」からの合成テストは、この状態でも可能です。');
+    return;
+  }
+  try{
+    if(state.stream) state.stream.getTracks().forEach(t=>t.stop());
+    state.stream = await navigator.mediaDevices.getUserMedia({
+      video:{ facingMode:{ ideal:state.facing }, width:{ideal:1920}, height:{ideal:1920} },
+      audio:false
+    });
+    video.srcObject = state.stream;
+    video.classList.toggle('mirror', state.facing==='user');
+    video.style.display='block'; still.style.display='none';
+    state.source='camera';
+    await video.play();
+    hideNotice();
+    updateDebug();
+  }catch(err){
+    showNotice('<b>カメラを起動できませんでした。</b><br>'
+      + (err && err.name ? err.name+'：' : '')
+      + 'ブラウザの権限設定を確認するか、「写真を選ぶ」で合成をテストしてください。'
+      + '<br>LINE等のアプリ内ブラウザで開いている場合は、SafariまたはChromeで開き直してください。');
+  }
+}
+$('flipBtn').onclick = ()=>{
+  state.facing = state.facing==='environment' ? 'user' : 'environment';
+  if(state.source==='still'){ state.source='camera'; }
+  startCamera();
+};
+
+/* ---------- 写真を選ぶ ---------- */
+$('pickBtn').onclick = ()=> $('fileInput').click();
+$('fileInput').onchange = e=>{
+  const f = e.target.files && e.target.files[0];
+  if(!f) return;
+  const url = URL.createObjectURL(f);
+  const im = new Image();
+  im.onload = ()=>{
+    state.stillImg = im; state.source='still';
+    still.src = url; still.style.display='block'; video.style.display='none';
+    hideNotice(); updateDebug();
+  };
+  im.src = url;
+  e.target.value='';
+};
+
+/* ---------- 撮影・合成 ---------- */
+async function capture(){
+  const W = stage.clientWidth, H = stage.clientHeight;
+  const dpr = window.devicePixelRatio || 1;
+  const R = Math.min(dpr, CONFIG.outputMaxWidth / W);
+  const cw = Math.round(W*R), ch = Math.round(H*R);
+  outCanvas.width = cw; outCanvas.height = ch;
+  const ctx = outCanvas.getContext('2d');
+  ctx.imageSmoothingQuality = 'high';
+  ctx.fillStyle = '#000'; ctx.fillRect(0,0,cw,ch);
+
+  // 1) 映像（プレビューの object-fit:cover と同じ計算）
+  let src=null, sw=0, sh=0;
+  if(state.source==='camera' && video.videoWidth){ src=video; sw=video.videoWidth; sh=video.videoHeight; }
+  else if(state.stillImg){ src=state.stillImg; sw=src.naturalWidth; sh=src.naturalHeight; }
+  if(src){
+    const r = coverRect(sw, sh, cw, ch);
+    ctx.save();
+    if(state.source==='camera' && state.facing==='user'){ ctx.translate(cw,0); ctx.scale(-1,1); }
+    ctx.drawImage(src, r.x, r.y, r.w, r.h);
+    ctx.restore();
+  }
+
+  // 2) 上下フレーム（プレビューと同じ frameRect を使う）
+  const f = CONFIG.frames[state.frameIndex];
+  for(const [s,anchor] of [[f.top,'top'],[f.bottom,'bottom']]){
+    if(!s) continue;
+    const im = await loadImg(s);
+    const r = frameRect(im.naturalWidth, im.naturalHeight, W, H, anchor);
+    ctx.drawImage(im, r.x*R, r.y*R, r.w*R, r.h*R);
+  }
+
+  // 3) スタンプ
+  for(const st of state.stamps){
+    ctx.save();
+    ctx.translate(st.x*R, st.y*R);
+    ctx.rotate(st.rot);
+    ctx.scale(st.scale, st.scale);
+    ctx.drawImage(st.img, -st.w/2*R, -st.h/2*R, st.w*R, st.h*R);
+    ctx.restore();
+  }
+
+  const blob = await new Promise(res=>outCanvas.toBlob(res,'image/jpeg',CONFIG.jpegQuality));
+  state.lastBlob = blob;
+  resultImg.src = URL.createObjectURL(blob);
+  saveHint.textContent = '出力 '+cw+' × '+ch+' px';
+  result.classList.add('show');
+}
+$('shutter').onclick = ()=>{ select(null); capture(); };
+$('retakeBtn').onclick = ()=> result.classList.remove('show');
+
+/* ---------- 保存・共有 ---------- */
+$('saveBtn').onclick = async ()=>{
+  if(!state.lastBlob) return;
+  const file = new File([state.lastBlob], 'qr-sable.jpg', { type:'image/jpeg' });
+  if(navigator.canShare && navigator.canShare({files:[file]})){
+    try{
+      await navigator.share({ files:[file] });
+      saveHint.textContent = '共有シートを開きました。「画像を保存」を選んでください。';
+      return;
+    }catch(err){
+      if(err && err.name === 'AbortError'){ return; }
+    }
+  }
+  const a = document.createElement('a');
+  a.href = resultImg.src; a.download = 'qr-sable.jpg';
+  document.body.appendChild(a); a.click(); a.remove();
+  saveHint.textContent = '保存されない場合は、上の画像を長押しして「”写真”に追加」を選んでください。';
+};
+
+/* ---------- 動作情報 ---------- */
+function updateDebug(){
+  if(!debug.classList.contains('show')) return;
+  const W=stage.clientWidth, H=stage.clientHeight;
+  const dpr=window.devicePixelRatio||1;
+  const R=Math.min(dpr, CONFIG.outputMaxWidth/W);
+  const ok = v => v ? '<b>OK</b>' : '<span class="ng">NG</span>';
+  const canShareFiles = !!(navigator.canShare && navigator.canShare({files:[new File([new Blob()],'t.jpg',{type:'image/jpeg'})]}));
+  debug.innerHTML =
+    'ステージ　 '+W+' × '+H+' px（比 '+(W/H).toFixed(3)+'）<br>'+
+    'DPR　　　 '+dpr.toFixed(2)+'　出力倍率 '+R.toFixed(2)+'<br>'+
+    '出力予定　 '+Math.round(W*R)+' × '+Math.round(H*R)+' px<br>'+
+    'カメラ映像 '+(video.videoWidth ? video.videoWidth+' × '+video.videoHeight : '未取得')+'<br>'+
+    'HTTPS　　 '+ok(window.isSecureContext)+'　getUserMedia '+ok(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia)+'<br>'+
+    'ファイル共有 '+ok(canShareFiles)+'<br>'+
+    'スタンプ　 '+state.stamps.length+' 点';
+}
+$('dbgBtn').onclick = ()=>{
+  debug.classList.toggle('show');
+  $('dbgBtn').classList.toggle('on');
+  updateDebug();
+};
+
+/* ---------- リサイズ・回転 ---------- */
+let rt;
+window.addEventListener('resize', ()=>{
+  clearTimeout(rt);
+  rt = setTimeout(()=>{
+    applyFrame();
+    const W=stage.clientWidth, H=stage.clientHeight;
+    state.stamps.forEach(s=>{
+      s.x = Math.min(Math.max(s.x, 0), W);
+      s.y = Math.min(Math.max(s.y, 0), H);
+      place(s);
+    });
+    updateDebug();
+  }, 150);
+});
+video.addEventListener('loadedmetadata', updateDebug);
+
+/* ---------- 起動 ---------- */
+$('label').firstChild.nodeValue = CONFIG.label;
+renderTray();
+applyFrame();
+startCamera();
+</script>
+</body>
+</html>
