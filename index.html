@@ -27,7 +27,10 @@ body{
 button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;}
 
 #app{
-  height:100dvh;height:100vh;
+  position:fixed;inset:0;
+  height:100vh;      /* 旧ブラウザ用フォールバック */
+  height:100svh;     /* URLバー表示時の実表示領域 */
+  height:100dvh;     /* 対応ブラウザではこれが最終適用 */
   display:flex;flex-direction:column;
   padding-top:env(safe-area-inset-top);
   padding-bottom:env(safe-area-inset-bottom);
@@ -88,7 +91,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;}
 #notice.show{display:block;}
 
 /* ---------- panel ---------- */
-#panel{flex:none;background:var(--panel);border-top:1px solid var(--line);}
+#panel{flex:0 0 auto;background:var(--panel);border-top:1px solid var(--line);}
 #modes{display:flex;gap:2px;padding:8px 12px 0;}
 #modes button{
   padding:7px 16px;font-size:12.5px;font-weight:600;color:var(--dim);
@@ -116,7 +119,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;}
 
 #shutterbar{
   display:flex;align-items:center;justify-content:space-between;
-  padding:6px 22px 14px;
+  padding:6px 22px 14px;min-height:90px;
 }
 .sidebtn{
   width:52px;height:52px;border-radius:13px;border:1px solid var(--line);
