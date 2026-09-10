@@ -29,18 +29,20 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;}
 #app{
   position:fixed;inset:0;
   height:100vh;      /* 旧ブラウザ用フォールバック */
-  height:100svh;     /* URLバー表示時の実表示領域 */
-  height:100dvh;     /* 対応ブラウザではこれが最終適用 */
-  display:flex;flex-direction:column;
-  padding-top:env(safe-area-inset-top);
-  padding-bottom:env(safe-area-inset-bottom);
+  height:100svh;
+  height:100dvh;
+  overflow:hidden;
 }
 
-/* ---------- header ---------- */
+/* ---------- header（ステージに重ねる） ---------- */
 #bar{
-  flex:none;display:flex;align-items:center;justify-content:space-between;
-  gap:10px;padding:9px 14px;border-bottom:1px solid var(--line);
+  position:absolute;top:0;left:0;right:0;z-index:20;
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:calc(7px + env(safe-area-inset-top)) 14px 22px;
+  background:linear-gradient(to bottom,rgba(0,0,0,.62),rgba(0,0,0,0));
+  pointer-events:none;
 }
+#bar>*{pointer-events:auto;}
 #label{font-size:13.5px;font-weight:600;letter-spacing:.02em;}
 #label span{color:var(--dim);font-weight:400;margin-left:8px;font-size:11.5px;}
 .iconbtn{
@@ -51,8 +53,8 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;}
 
 /* ---------- stage ---------- */
 #stage{
-  flex:1;position:relative;overflow:hidden;background:var(--stage-bg);
-  touch-action:none;min-height:0;
+  position:absolute;inset:0;overflow:hidden;background:var(--stage-bg);
+  touch-action:none;
 }
 #video,#still{
   position:absolute;inset:0;width:100%;height:100%;
@@ -76,12 +78,20 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;}
   content:"";position:absolute;inset:-6px;
   border:1.5px dashed rgba(232,176,75,.9);border-radius:6px;
 }
-.del{
-  position:absolute;top:-13px;right:-13px;width:26px;height:26px;border-radius:50%;
-  background:var(--danger);color:#fff;font-size:14px;line-height:26px;text-align:center;
-  display:none;font-weight:700;
+.ctl{
+  position:absolute;width:34px;height:34px;border-radius:50%;
+  display:none;place-items:center;transform-origin:50% 50%;
+  box-shadow:0 2px 8px rgba(0,0,0,.5);
 }
-.stamp.sel .del{display:block;}
+.stamp.sel .ctl{display:grid;}
+.del{
+  top:-17px;left:-17px;background:var(--danger);color:#fff;
+  font-size:17px;font-weight:700;line-height:1;
+}
+.handle{
+  bottom:-17px;right:-17px;background:var(--accent);color:#191510;
+  font-size:16px;font-weight:700;line-height:1;
+}
 
 /* notices */
 #notice{
@@ -89,10 +99,29 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;}
   background:rgba(224,122,95,.94);color:#fff;font-size:12.5px;line-height:1.6;display:none;
 }
 #notice.show{display:block;}
+#tip{
+  position:absolute;left:50%;transform:translateX(-50%);bottom:16px;z-index:30;
+  background:rgba(10,9,8,.92);border:1px solid var(--line);border-radius:999px;
+  padding:9px 18px;font-size:12px;color:var(--text);white-space:nowrap;
+  display:none;pointer-events:none;
+}
+#tip.show{display:block;}
 
 /* ---------- panel ---------- */
-#panel{flex:0 0 auto;background:var(--panel);border-top:1px solid var(--line);}
-#modes{display:flex;gap:2px;padding:8px 12px 0;}
+#panel{
+  position:absolute;left:0;right:0;bottom:0;z-index:20;
+  background:rgba(18,16,13,.86);
+  -webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
+  border-top:1px solid rgba(255,255,255,.08);
+  padding-bottom:env(safe-area-inset-bottom);
+}
+#collapse{
+  display:block;width:100%;padding:7px 0 3px;text-align:center;
+  font-size:11px;color:var(--dim);letter-spacing:.08em;
+}
+#paneltop{overflow:hidden;}
+#panel.min #paneltop{display:none;}
+#modes{display:flex;gap:2px;padding:4px 12px 0;}
 #modes button{
   padding:7px 16px;font-size:12.5px;font-weight:600;color:var(--dim);
   border-bottom:2px solid transparent;
@@ -162,11 +191,6 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;}
 <body>
 
 <div id="app">
-  <div id="bar">
-    <div id="label">サンプル動物園<span>検証用プロトタイプ</span></div>
-    <button class="iconbtn" id="dbgBtn" aria-label="動作情報">i</button>
-  </div>
-
   <div id="stage">
     <video id="video" playsinline muted autoplay></video>
     <img id="still" alt="">
@@ -177,13 +201,23 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;}
     <div id="debug"></div>
   </div>
 
+  <div id="bar">
+    <div id="label">サンプル動物園<span>検証用プロトタイプ</span></div>
+    <button class="iconbtn" id="dbgBtn" aria-label="動作情報">i</button>
+  </div>
+
+  <div id="tip"></div>
+
   <div id="panel">
-    <div id="modes">
-      <button data-mode="frame" class="on">フレーム</button>
-      <button data-mode="stamp">スタンプ</button>
+    <button id="collapse">▼ 閉じる</button>
+    <div id="paneltop">
+      <div id="modes">
+        <button data-mode="frame" class="on">フレーム</button>
+        <button data-mode="stamp">スタンプ</button>
+      </div>
+      <div id="tabs" hidden></div>
+      <div class="tray" id="tray"></div>
     </div>
-    <div id="tabs" hidden></div>
-    <div class="tray" id="tray"></div>
     <div id="shutterbar">
       <button class="sidebtn" id="flipBtn">カメラ<br>切替</button>
       <button id="shutter" aria-label="撮影"></button>
@@ -326,23 +360,40 @@ async function addStamp(src){
   const el = document.createElement('div');
   el.className = 'stamp';
   el.style.width = w+'px';
-  el.innerHTML = '<img src="'+src+'" alt=""><div class="del">×</div>';
+  el.innerHTML = '<img src="'+src+'" alt=""><div class="ctl del">×</div><div class="ctl handle">⤢</div>';
   const s = {
     key: ++state.seq, src, img: im, w, h,
     x: stage.clientWidth/2,
     y: stage.clientHeight/2 + (Math.random()*60-30),
-    scale: 1, rot: 0, el
+    scale: 1, rot: 0, el,
+    del: el.querySelector('.del'),
+    handle: el.querySelector('.handle')
   };
   stampLayer.appendChild(el);
   state.stamps.push(s);
   bindStamp(s);
   select(s);
   place(s);
+  if(!state.tipShown){
+    state.tipShown = true;
+    showTip('角の ⤢ をドラッグで拡大・回転');
+  }
+}
+let tipTimer;
+function showTip(text){
+  const t = $('tip');
+  t.textContent = text; t.classList.add('show');
+  clearTimeout(tipTimer);
+  tipTimer = setTimeout(()=>t.classList.remove('show'), 4000);
 }
 function place(s){
   s.el.style.left = (s.x - s.w/2) + 'px';
   s.el.style.top  = (s.y - s.h/2) + 'px';
   s.el.style.transform = 'rotate('+s.rot+'rad) scale('+s.scale+')';
+  // ハンドルは常に同じ見かけサイズ・向きに保つ
+  const inv = 'scale('+(1/s.scale)+') rotate('+(-s.rot)+'rad)';
+  s.del.style.transform = inv;
+  s.handle.style.transform = inv;
 }
 function select(s){
   state.stamps.forEach(o=>o.el.classList.toggle('sel', o===s));
@@ -358,8 +409,36 @@ function bindStamp(s){
   const pts = new Map();
   let start = null;
 
+  // 角ハンドル：1本指で拡大・回転
+  s.handle.addEventListener('pointerdown', e=>{
+    e.preventDefault(); e.stopPropagation();
+    select(s);
+    s.handle.setPointerCapture(e.pointerId);
+    const r = stage.getBoundingClientRect();
+    const cx = r.left + s.x, cy = r.top + s.y;
+    const d0 = Math.hypot(e.clientX-cx, e.clientY-cy) || 1;
+    const a0 = Math.atan2(e.clientY-cy, e.clientX-cx);
+    const sc0 = s.scale, rot0 = s.rot;
+    const move = ev=>{
+      const d = Math.hypot(ev.clientX-cx, ev.clientY-cy);
+      const a = Math.atan2(ev.clientY-cy, ev.clientX-cx);
+      s.scale = Math.min(6, Math.max(0.2, sc0 * (d/d0)));
+      s.rot = rot0 + (a - a0);
+      place(s);
+    };
+    const up = ()=>{
+      s.handle.removeEventListener('pointermove', move);
+      s.handle.removeEventListener('pointerup', up);
+      s.handle.removeEventListener('pointercancel', up);
+    };
+    s.handle.addEventListener('pointermove', move);
+    s.handle.addEventListener('pointerup', up);
+    s.handle.addEventListener('pointercancel', up);
+  });
+
   s.el.addEventListener('pointerdown', e=>{
     if(e.target.classList.contains('del')){ removeStamp(s); return; }
+    if(e.target.classList.contains('handle')) return;
     e.preventDefault();
     s.el.setPointerCapture(e.pointerId);
     pts.set(e.pointerId, {x:e.clientX, y:e.clientY});
@@ -441,6 +520,11 @@ modes.querySelectorAll('button').forEach(b=>{
     renderTray();
   };
 });
+$('collapse').onclick = ()=>{
+  const p = $('panel');
+  p.classList.toggle('min');
+  $('collapse').textContent = p.classList.contains('min') ? '▲ フレーム・スタンプ' : '▼ 閉じる';
+};
 
 /* ---------- カメラ ---------- */
 function showNotice(html){ notice.innerHTML=html; notice.classList.add('show'); }
