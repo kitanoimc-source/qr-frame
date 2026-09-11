@@ -46,15 +46,16 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;}
 #label{font-size:13.5px;font-weight:600;letter-spacing:.02em;}
 #label span{color:var(--dim);font-weight:400;margin-left:8px;font-size:11.5px;}
 .iconbtn{
-  flex:none;width:34px;height:34px;border-radius:9px;border:1px solid var(--line);
-  display:grid;place-items:center;font-size:12px;color:var(--dim);
+  flex:none;min-width:34px;height:34px;padding:0 8px;border-radius:9px;border:1px solid var(--line);
+  display:grid;place-items:center;font-size:11.5px;color:var(--dim);
+  background:rgba(0,0,0,.35);
 }
 .iconbtn.on{border-color:var(--accent);color:var(--accent);}
 
 /* ---------- stage ---------- */
 #stage{
-  position:absolute;inset:0;overflow:hidden;background:var(--stage-bg);
-  touch-action:none;
+  position:absolute;left:0;top:0;width:100%;height:100%;
+  overflow:hidden;background:var(--stage-bg);touch-action:none;
 }
 #video,#still{
   position:absolute;inset:0;width:100%;height:100%;
@@ -203,7 +204,10 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;}
 
   <div id="bar">
     <div id="label">サンプル動物園<span>検証用プロトタイプ</span></div>
-    <button class="iconbtn" id="dbgBtn" aria-label="動作情報">i</button>
+    <div style="display:flex;gap:7px;">
+      <button class="iconbtn" id="aspBtn" aria-label="出力比率">9:16</button>
+      <button class="iconbtn" id="dbgBtn" aria-label="動作情報">i</button>
+    </div>
   </div>
 
   <div id="tip"></div>
@@ -277,22 +281,29 @@ const S = {
 };
 
 /* ---------- 設定（本番はここだけ差し替える） ---------- */
+const FRAME_DIR = 'assets/';
+function framePair(n){
+  const id = String(n).padStart(2,'0');
+  return { id:id, name:id,
+           top:    FRAME_DIR+'kureyonshinchan'+id+'ue.png',
+           bottom: FRAME_DIR+'kureyonshinchan'+id+'shita.png' };
+}
 const CONFIG = {
-  label: 'サンプル動物園',
-  frames: [
-    { id:'none', name:'なし',  top:null, bottom:null },
-    { id:'f1', name:'A', top:dummyFrame('top','#7a4034','#f6efe6','SAMPLE ZOO'),    bottom:dummyFrame('bottom','#7a4034','#f6efe6','QR SABLE') },
-    { id:'f2', name:'B', top:dummyFrame('top','#3f5d46','#eef4ee','サンプル動物園'), bottom:dummyFrame('bottom','#3f5d46','#eef4ee','2026') },
-    { id:'f3', name:'C', top:dummyFrame('top','#2f4a68','#eaf0f7','ZOO PHOTO'),      bottom:dummyFrame('bottom','#2f4a68','#eaf0f7','MEMORY') }
-  ],
+  label: 'クレヨンしんちゃん QRサブレ',
+  frames: [ { id:'none', name:'枠なし', top:null, bottom:null } ]
+            .concat([1,2,3,4,5,6,7,8,9,10].map(framePair)),
+
+  // スタンプは仮素材。実素材が届いたらここを差し替える
   stampTabs: [
-    { name:'どうぶつ', stamps:[{id:'paw',src:S.paw},{id:'leaf',src:S.leaf},{id:'flower',src:S.flower},{id:'crown',src:S.crown}] },
     { name:'かざり',   stamps:[{id:'star',src:S.star},{id:'heart',src:S.heart},{id:'sun',src:S.sun},{id:'cloud',src:S.cloud},{id:'ribbon',src:S.ribbon}] },
-    { name:'ふきだし', stamps:[{id:'bubbleA',src:S.bubbleA},{id:'bubbleB',src:S.bubbleB},{id:'bubbleC',src:S.bubbleC}] }
+    { name:'ふきだし', stamps:[{id:'bubbleA',src:S.bubbleA},{id:'bubbleB',src:S.bubbleB},{id:'bubbleC',src:S.bubbleC}] },
+    { name:'その他',   stamps:[{id:'paw',src:S.paw},{id:'leaf',src:S.leaf},{id:'flower',src:S.flower},{id:'crown',src:S.crown}] }
   ],
-  frameMaxRatio: 0.40,   // 上下フレーム各々の高さ上限（ステージ高に対する比率）
-  stampBaseWidth: 118,   // スタンプ初期表示幅(CSS px)
-  outputMaxWidth: 1440,  // 出力画像の最大横幅
+
+  frameMaxRatio: 1.0,    // 1.0＝上限なし（横幅にフィット）。帯素材を使う場合のみ下げる
+  lockAspect: 9/16,      // 「9:16」ボタンで使う比率（素材の設計比）
+  stampBaseWidth: 118,
+  outputMaxWidth: 1440,
   jpegQuality: 0.92
 };
 
@@ -310,6 +321,8 @@ const state = {
   frameIndex:1,
   tabIndex:0,
   facing:'environment',
+  lockAspect:null,
+  tipShown:false,
   stream:null,
   stamps:[],          // {id, img, x, y, scale, rot, w, h, el}
   selected:null,
@@ -338,18 +351,44 @@ function frameRect(imgW,imgH,stageW,stageH,anchor){
   return { x:(stageW-w)/2, y: anchor==='top' ? 0 : stageH-h, w, h };
 }
 
+/* ---------- ステージの比率レイアウト ---------- */
+function layoutStage(){
+  const app = $('app');
+  const W = app.clientWidth, H = app.clientHeight;
+  let w = W, h = H;
+  if(state.lockAspect){
+    h = W / state.lockAspect;
+    if(h > H){ h = H; w = H * state.lockAspect; }
+  }
+  stage.style.width  = Math.round(w)+'px';
+  stage.style.height = Math.round(h)+'px';
+  stage.style.left   = Math.round((W-w)/2)+'px';
+  stage.style.top    = Math.round((H-h)/2)+'px';
+}
+
 /* ---------- フレーム適用 ---------- */
 async function applyFrame(){
   const f = CONFIG.frames[state.frameIndex];
   for(const [el,src,anchor] of [[fTop,f.top,'top'],[fBottom,f.bottom,'bottom']]){
     if(!src){ el.style.display='none'; el.removeAttribute('src'); continue; }
-    const im = await loadImg(src);
+    let im;
+    try{
+      im = await loadImg(src);
+    }catch(e){
+      imgCache.delete(src);
+      el.style.display='none';
+      showNotice('<b>フレーム画像を読み込めません。</b><br>'
+        + src + ' が見つかりません。<br>'
+        + 'index.html と同じ階層に <b>assets</b> フォルダを作り、20点のPNGをそのまま入れてください。');
+      continue;
+    }
     el.src = src; el.style.display='block';
     const r = frameRect(im.naturalWidth, im.naturalHeight, stage.clientWidth, stage.clientHeight, anchor);
     el.style.width = r.w+'px';
     el.style.height = r.h+'px';
   }
   renderTray();
+  updateDebug();
 }
 
 /* ---------- スタンプ ---------- */
@@ -664,8 +703,22 @@ function updateDebug(){
     'カメラ映像 '+(video.videoWidth ? video.videoWidth+' × '+video.videoHeight : '未取得')+'<br>'+
     'HTTPS　　 '+ok(window.isSecureContext)+'　getUserMedia '+ok(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia)+'<br>'+
     'ファイル共有 '+ok(canShareFiles)+'<br>'+
-    'スタンプ　 '+state.stamps.length+' 点';
+    'スタンプ　 '+state.stamps.length+' 点<br>'+
+    '比率固定　 '+(state.lockAspect ? '9:16' : 'なし（画面なり）')+'<br>'+
+    'フレーム　 '+CONFIG.frames[state.frameIndex].name+
+      (fTop.style.display!=='none' ? '　上 '+Math.round(parseFloat(fTop.style.height||0))+'px' : '')+
+      (fBottom.style.display!=='none' ? ' / 下 '+Math.round(parseFloat(fBottom.style.height||0))+'px' : '');
 }
+$('aspBtn').onclick = ()=>{
+  state.lockAspect = state.lockAspect ? null : CONFIG.lockAspect;
+  $('aspBtn').classList.toggle('on', !!state.lockAspect);
+  $('aspBtn').textContent = state.lockAspect ? '9:16' : '画面';
+  layoutStage();
+  applyFrame();
+  const W=stage.clientWidth,H=stage.clientHeight;
+  state.stamps.forEach(s2=>{ s2.x=Math.min(s2.x,W); s2.y=Math.min(s2.y,H); place(s2); });
+  showTip(state.lockAspect ? '出力を 9:16（素材の設計比）に固定' : '出力を画面の比率に合わせる');
+};
 $('dbgBtn').onclick = ()=>{
   debug.classList.toggle('show');
   $('dbgBtn').classList.toggle('on');
@@ -677,6 +730,7 @@ let rt;
 window.addEventListener('resize', ()=>{
   clearTimeout(rt);
   rt = setTimeout(()=>{
+    layoutStage();
     applyFrame();
     const W=stage.clientWidth, H=stage.clientHeight;
     state.stamps.forEach(s=>{
@@ -691,6 +745,8 @@ video.addEventListener('loadedmetadata', updateDebug);
 
 /* ---------- 起動 ---------- */
 $('label').firstChild.nodeValue = CONFIG.label;
+$('aspBtn').textContent = '画面';
+layoutStage();
 renderTray();
 applyFrame();
 startCamera();
