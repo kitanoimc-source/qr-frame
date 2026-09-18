@@ -29,9 +29,8 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;}
 
 /* ===== stage ===== */
 #stage{position:absolute;left:0;top:0;width:100%;height:100%;overflow:hidden;background:#000;touch-action:none;}
-#video,#still{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;}
+#video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;}
 #video.mirror{transform:scaleX(-1);}
-#still{display:none;}
 .frameimg{position:absolute;left:50%;transform:translateX(-50%);pointer-events:none;display:block;}
 #frameTop{top:0;} #frameBottom{bottom:0;}
 #stampLayer{position:absolute;inset:0;}
@@ -95,10 +94,10 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;}
 #grid.stamps{grid-template-columns:repeat(5,1fr);}
 
 .fthumb{
-  position:relative;aspect-ratio:9/16;border-radius:6px;overflow:hidden;
-  background:#6e6e6e;border:2px solid transparent;
+  position:relative;aspect-ratio:9/16;border-radius:4px;overflow:hidden;
+  background:rgba(255,255,255,.05);border:2px solid transparent;
 }
-.fthumb.on{border-color:var(--pink);}
+.fthumb.on{border-color:var(--pink);background:rgba(228,0,127,.10);}
 .fthumb img{position:absolute;left:0;width:100%;height:auto;display:block;}
 .fthumb img.t{top:0;} .fthumb img.b{bottom:0;}
 
@@ -157,14 +156,6 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;}
   font-size:12px;white-space:nowrap;display:none;pointer-events:none;
 }
 #tip.show{display:block;}
-#debug{
-  position:absolute;left:10px;right:10px;top:calc(70px + env(safe-area-inset-top));z-index:37;
-  background:rgba(8,8,8,.94);border:1px solid var(--line);border-radius:10px;padding:11px 13px;
-  font-size:11px;line-height:1.85;display:none;font-family:ui-monospace,Menlo,monospace;color:#d6d2c8;
-}
-#debug.show{display:block;}
-#debug b{color:var(--pink);font-weight:500;}
-#debug .ng{color:#ff8a76;}
 
 /* ===== result ===== */
 #result{position:fixed;inset:0;background:#0d0c0b;z-index:60;display:none;flex-direction:column;
@@ -185,7 +176,6 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;}
 <div id="app">
   <div id="stage">
     <video id="video" playsinline muted autoplay></video>
-    <img id="still" alt="">
     <img class="frameimg" id="frameTop" alt="">
     <img class="frameimg" id="frameBottom" alt="">
     <div id="stampLayer"></div>
@@ -195,15 +185,11 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;}
     <div id="label">クレヨンしんちゃん QRサブレ</div>
     <div id="tools">
       <button class="tool" id="flipBtn"><i>⟳</i><span>カメラ切替</span></button>
-      <button class="tool" id="pickBtn"><i>▣</i><span>写真を選ぶ</span></button>
-      <button class="tool" id="aspBtn"><i>▭</i><span>画面</span></button>
-      <button class="tool" id="dbgBtn"><i>i</i><span>動作情報</span></button>
     </div>
   </div>
 
   <div id="recbar">● 録画中 <span id="recTime">0.0</span> 秒</div>
   <div id="notice"></div>
-  <div id="debug"></div>
   <div id="tip"></div>
 
   <div id="sheet">
@@ -232,7 +218,6 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;}
   </div>
 </div>
 
-<input type="file" id="fileInput" accept="image/*" hidden>
 <canvas id="out" hidden></canvas>
 
 <script>
@@ -287,16 +272,16 @@ CONFIG.stampTabs[1].stamps = [DUMMY.bubbleA,DUMMY.bubbleB].map((s,i)=>({id:'b'+i
 
 /* ---------- 要素 ---------- */
 const $ = id => document.getElementById(id);
-const app=$('app'), stage=$('stage'), video=$('video'), still=$('still');
+const app=$('app'), stage=$('stage'), video=$('video');
 const fTop=$('frameTop'), fBottom=$('frameBottom'), stampLayer=$('stampLayer');
 const sheet=$('sheet'), tabs=$('tabs'), grid=$('grid');
 const outCanvas=$('out'), result=$('result'), rimg=$('rimg'), rvid=$('rvid'), rhint=$('rhint');
-const notice=$('notice'), debug=$('debug');
+const notice=$('notice');
 
 const state = {
   sheet:null, frameTab:0, stampTab:0,
   frame:null, frameImgs:{top:null,bottom:null},
-  facing:'environment', stream:null, source:'camera', stillImg:null,
+  facing:'environment', stream:null,
   lockAspect:null, stamps:[], selected:null, seq:0, tipShown:false,
   rec:null, recChunks:[], recStart:0, recTimer:null, recLoop:null,
   lastBlob:null, lastType:'image'
@@ -346,7 +331,6 @@ async function applyFrame(){
     const r = frameRect(im.naturalWidth, im.naturalHeight, stage.clientWidth, stage.clientHeight, anchor);
     el.style.width=r.w+'px'; el.style.height=r.h+'px';
   }
-  updateDebug();
 }
 
 /* ---------- スタンプ ---------- */
@@ -489,7 +473,7 @@ function showTip(t){ const e=$('tip'); e.textContent=t; e.classList.add('show');
 
 async function startCamera(){
   if(!window.isSecureContext){
-    showNotice('<b>HTTPSでの配信が必要です。</b><br>ローカルのファイルを直接開くとカメラは起動しません。「写真を選ぶ」での合成テストは可能です。');
+    showNotice('<b>HTTPSでの配信が必要です。</b><br>ローカルのファイルを直接開くとカメラは起動しません。');
     return;
   }
   try{
@@ -498,35 +482,23 @@ async function startCamera(){
       video:{ facingMode:{ideal:state.facing}, width:{ideal:1920}, height:{ideal:1920} }, audio:false });
     video.srcObject=state.stream;
     video.classList.toggle('mirror', state.facing==='user');
-    video.style.display='block'; still.style.display='none'; state.source='camera';
-    await video.play(); hideNotice(); updateDebug();
+    video.style.display='block';
+    await video.play(); hideNotice();
   }catch(err){
     showNotice('<b>カメラを起動できませんでした。</b><br>'+(err&&err.name?err.name+'：':'')
-      +'権限を確認するか「写真を選ぶ」をお試しください。<br>LINE等のアプリ内ブラウザで開いている場合は、SafariまたはChromeで開き直してください。');
+      +'カメラの許可を確認してください。<br>LINE等のアプリ内ブラウザで開いている場合は、SafariまたはChromeで開き直してください。');
   }
 }
 $('flipBtn').onclick=()=>{ state.facing = state.facing==='environment'?'user':'environment'; startCamera(); };
-$('pickBtn').onclick=()=>$('fileInput').click();
-$('fileInput').onchange=e=>{
-  const f=e.target.files&&e.target.files[0]; if(!f) return;
-  const url=URL.createObjectURL(f), im=new Image();
-  im.onload=()=>{ state.stillImg=im; state.source='still';
-    still.src=url; still.style.display='block'; video.style.display='none';
-    hideNotice(); updateDebug(); };
-  im.src=url; e.target.value='';
-};
 
 /* ---------- 合成（静止画・動画で共用） ---------- */
 function drawComposite(ctx,cw,ch,W,H,R){
   ctx.fillStyle='#000'; ctx.fillRect(0,0,cw,ch);
-  let src=null,sw=0,sh=0;
-  if(state.source==='camera' && video.videoWidth){ src=video; sw=video.videoWidth; sh=video.videoHeight; }
-  else if(state.stillImg){ src=state.stillImg; sw=src.naturalWidth; sh=src.naturalHeight; }
-  if(src){
-    const r=coverRect(sw,sh,cw,ch);
+  if(video.videoWidth){
+    const r=coverRect(video.videoWidth,video.videoHeight,cw,ch);
     ctx.save();
-    if(state.source==='camera' && state.facing==='user'){ ctx.translate(cw,0); ctx.scale(-1,1); }
-    ctx.drawImage(src,r.x,r.y,r.w,r.h);
+    if(state.facing==='user'){ ctx.translate(cw,0); ctx.scale(-1,1); }
+    ctx.drawImage(video,r.x,r.y,r.w,r.h);
     ctx.restore();
   }
   for(const [im,anchor] of [[state.frameImgs.top,'top'],[state.frameImgs.bottom,'bottom']]){
@@ -642,35 +614,6 @@ $('saveBtn').onclick=async ()=>{
                            : '保存できない場合は、画像を長押しして「”写真”に追加」を選んでください。';
 };
 
-/* ---------- 比率・動作情報 ---------- */
-$('aspBtn').onclick=()=>{
-  state.lockAspect = state.lockAspect ? null : CONFIG.lockAspect;
-  $('aspBtn').classList.toggle('on',!!state.lockAspect);
-  $('aspBtn').querySelector('span').textContent = state.lockAspect ? '9:16' : '画面';
-  layoutStage(); applyFrame();
-  const W=stage.clientWidth,H=stage.clientHeight;
-  state.stamps.forEach(s=>{ s.x=Math.min(s.x,W); s.y=Math.min(s.y,H); place(s); });
-  showTip(state.lockAspect?'出力を 9:16（素材の設計比）に固定':'出力を画面の比率に合わせる');
-};
-function updateDebug(){
-  if(!debug.classList.contains('show')) return;
-  const W=stage.clientWidth,H=stage.clientHeight,dpr=window.devicePixelRatio||1;
-  const R=Math.min(dpr,CONFIG.outputMaxWidth/W);
-  const ok=v=>v?'<b>OK</b>':'<span class="ng">NG</span>';
-  let share=false;
-  try{ share=!!(navigator.canShare&&navigator.canShare({files:[new File([new Blob()],'t.jpg',{type:'image/jpeg'})]})); }catch(e){}
-  debug.innerHTML=
-    'ステージ　 '+W+' × '+H+' px（比 '+(W/H).toFixed(3)+'）<br>'+
-    'DPR　　　 '+dpr.toFixed(2)+'　出力倍率 '+R.toFixed(2)+'<br>'+
-    '静止画出力 '+Math.round(W*R)+' × '+Math.round(H*R)+' px<br>'+
-    'カメラ映像 '+(video.videoWidth?video.videoWidth+' × '+video.videoHeight:'未取得')+'<br>'+
-    'HTTPS　　 '+ok(window.isSecureContext)+'　getUserMedia '+ok(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia)+'<br>'+
-    'ファイル共有 '+ok(share)+'　録画 '+ok(recSupported())+'<br>'+
-    '録画形式　 '+(recSupported()?(pickMime()||'既定'):'—')+'<br>'+
-    '比率固定　 '+(state.lockAspect?'9:16':'なし')+'<br>'+
-    'フレーム　 '+(state.frame?state.frame.id:'なし')+'　スタンプ '+state.stamps.length+' 点';
-}
-$('dbgBtn').onclick=()=>{ debug.classList.toggle('show'); $('dbgBtn').classList.toggle('on'); updateDebug(); };
 
 /* ---------- リサイズ ---------- */
 let rt;
@@ -680,10 +623,8 @@ window.addEventListener('resize',()=>{
     layoutStage(); applyFrame();
     const W=stage.clientWidth,H=stage.clientHeight;
     state.stamps.forEach(s=>{ s.x=Math.min(Math.max(s.x,0),W); s.y=Math.min(Math.max(s.y,0),H); place(s); });
-    updateDebug();
-  },150);
+    },150);
 });
-video.addEventListener('loadedmetadata',updateDebug);
 
 /* ---------- 起動 ---------- */
 $('label').textContent=CONFIG.label;
