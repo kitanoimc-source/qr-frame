@@ -1,0 +1,234 @@
+{
+ "v": 3,
+ "layout": "files",
+ "createdOnFiles": {
+  "v": 1,
+  "at": "2026-09-25T06:10:00Z"
+ },
+ "title": "QR Frame",
+ "namespace": "QRFrame",
+ "libraries": [],
+ "sections": {},
+ "groups": [
+  "Frames",
+  "Stamps"
+ ],
+ "assetGroups": {
+  "Frames": {
+   "name": "Frames",
+   "tile": "m",
+   "order": [
+    "kureyonshinchan01ue.png",
+    "kureyonshinchan01shita.png",
+    "kureyonshinchan02ue.png",
+    "kureyonshinchan02shita.png",
+    "kureyonshinchan03ue.png",
+    "kureyonshinchan03shita.png",
+    "kureyonshinchan04ue.png",
+    "kureyonshinchan04shita.png",
+    "kureyonshinchan05ue.png",
+    "kureyonshinchan05shita.png",
+    "kureyonshinchan06ue.png",
+    "kureyonshinchan06shita.png",
+    "kureyonshinchan07ue.png",
+    "kureyonshinchan07shita.png",
+    "kureyonshinchan08ue.png",
+    "kureyonshinchan08shita.png",
+    "kureyonshinchan09ue.png",
+    "kureyonshinchan09shita.png",
+    "kureyonshinchan10ue.png",
+    "kureyonshinchan10shita.png"
+   ],
+   "files": {
+    "kureyonshinchan01ue.png": {
+     "name": "kureyonshinchan01ue.png",
+     "blob": "8b4e8cbcce2da9fc32bd8f82b6051120",
+     "size": 124902,
+     "type": "image/png"
+    },
+    "kureyonshinchan01shita.png": {
+     "name": "kureyonshinchan01shita.png",
+     "blob": "61e3f7795e70b8e671dde091be18b2d2",
+     "size": 357261,
+     "type": "image/png"
+    },
+    "kureyonshinchan02ue.png": {
+     "name": "kureyonshinchan02ue.png",
+     "blob": "232db3853dc1f71f3dd02bbf8fdc3c06",
+     "size": 226442,
+     "type": "image/png"
+    },
+    "kureyonshinchan02shita.png": {
+     "name": "kureyonshinchan02shita.png",
+     "blob": "fbae58a46b5b1f95adf1b647a4265cc8",
+     "size": 190523,
+     "type": "image/png"
+    },
+    "kureyonshinchan03ue.png": {
+     "name": "kureyonshinchan03ue.png",
+     "blob": "7b2721d8304616f576bc3cd39f9c9cde",
+     "size": 125110,
+     "type": "image/png"
+    },
+    "kureyonshinchan03shita.png": {
+     "name": "kureyonshinchan03shita.png",
+     "blob": "1d837997faa9568dfd32b80e122db8f4",
+     "size": 325086,
+     "type": "image/png"
+    },
+    "kureyonshinchan04ue.png": {
+     "name": "kureyonshinchan04ue.png",
+     "blob": "0d180b4f41463e82fb4be86b42f56c8b",
+     "size": 236546,
+     "type": "image/png"
+    },
+    "kureyonshinchan04shita.png": {
+     "name": "kureyonshinchan04shita.png",
+     "blob": "13aa9cdd05bb60c41c96224cc2683e2f",
+     "size": 83405,
+     "type": "image/png"
+    },
+    "kureyonshinchan05ue.png": {
+     "name": "kureyonshinchan05ue.png",
+     "blob": "084b0e2f5d71b2809aa11d565921d2c6",
+     "size": 124785,
+     "type": "image/png"
+    },
+    "kureyonshinchan05shita.png": {
+     "name": "kureyonshinchan05shita.png",
+     "blob": "b4b8e4bfa5c5663084d82d56a056d69f",
+     "size": 229903,
+     "type": "image/png"
+    },
+    "kureyonshinchan06ue.png": {
+     "name": "kureyonshinchan06ue.png",
+     "blob": "f11a8c6baa7bd5226efc5441af3aa8c7",
+     "size": 124765,
+     "type": "image/png"
+    },
+    "kureyonshinchan06shita.png": {
+     "name": "kureyonshinchan06shita.png",
+     "blob": "fd2cab6f82baf5c11766ee548e1360b7",
+     "size": 224261,
+     "type": "image/png"
+    },
+    "kureyonshinchan07ue.png": {
+     "name": "kureyonshinchan07ue.png",
+     "blob": "b69f03974177b3b12478d7717a201dd2",
+     "size": 95770,
+     "type": "image/png"
+    },
+    "kureyonshinchan07shita.png": {
+     "name": "kureyonshinchan07shita.png",
+     "blob": "9c4d4a7559a1337ac5dbc3f7073626bb",
+     "size": 94112,
+     "type": "image/png"
+    },
+    "kureyonshinchan08ue.png": {
+     "name": "kureyonshinchan08ue.png",
+     "blob": "e759c0154f340deef2c166d47e73a068",
+     "size": 256516,
+     "type": "image/png"
+    },
+    "kureyonshinchan08shita.png": {
+     "name": "kureyonshinchan08shita.png",
+     "blob": "db89d57cc38c7887700ba078d516859b",
+     "size": 112115,
+     "type": "image/png"
+    },
+    "kureyonshinchan09ue.png": {
+     "name": "kureyonshinchan09ue.png",
+     "blob": "27223376cc542135758092535a0142f4",
+     "size": 124843,
+     "type": "image/png"
+    },
+    "kureyonshinchan09shita.png": {
+     "name": "kureyonshinchan09shita.png",
+     "blob": "0a52a5fd5f9b297f3b65b35832562b22",
+     "size": 184534,
+     "type": "image/png"
+    },
+    "kureyonshinchan10ue.png": {
+     "name": "kureyonshinchan10ue.png",
+     "blob": "08d24eb3068bb7cb6068c33772874db1",
+     "size": 125008,
+     "type": "image/png"
+    },
+    "kureyonshinchan10shita.png": {
+     "name": "kureyonshinchan10shita.png",
+     "blob": "c7d2585019e3ea45c6603a95119c0f15",
+     "size": 189962,
+     "type": "image/png"
+    }
+   }
+  },
+  "Stamps": {
+   "name": "Stamps",
+   "tile": "s",
+   "order": [
+    "placeholder-star.svg",
+    "placeholder-heart.svg",
+    "placeholder-sun.svg",
+    "placeholder-crown.svg",
+    "placeholder-flower.svg",
+    "placeholder-bubbleA.svg",
+    "placeholder-bubbleB.svg"
+   ],
+   "files": {
+    "placeholder-star.svg": {
+     "name": "placeholder-star.svg",
+     "blob": "ee1b8087a54aa167fbfb3a0aa72ea14e",
+     "size": 257,
+     "type": "image/svg+xml"
+    },
+    "placeholder-heart.svg": {
+     "name": "placeholder-heart.svg",
+     "blob": "c434bca2db0daa50d5de43b573505d5d",
+     "size": 281,
+     "type": "image/svg+xml"
+    },
+    "placeholder-sun.svg": {
+     "name": "placeholder-sun.svg",
+     "blob": "1f13d3f29893ff7cd2305a703d42d614",
+     "size": 369,
+     "type": "image/svg+xml"
+    },
+    "placeholder-crown.svg": {
+     "name": "placeholder-crown.svg",
+     "blob": "0d7d15eca449f566fc4c4cf03c3658e9",
+     "size": 398,
+     "type": "image/svg+xml"
+    },
+    "placeholder-flower.svg": {
+     "name": "placeholder-flower.svg",
+     "blob": "3ff5c4801b52b1d9fe931d4dbec95911",
+     "size": 382,
+     "type": "image/svg+xml"
+    },
+    "placeholder-bubbleA.svg": {
+     "name": "placeholder-bubbleA.svg",
+     "blob": "ccdb869793193c8b99cfff3a7269408c",
+     "size": 396,
+     "type": "image/svg+xml"
+    },
+    "placeholder-bubbleB.svg": {
+     "name": "placeholder-bubbleB.svg",
+     "blob": "0d04254b4dc2a06958825959ce26fdb9",
+     "size": 441,
+     "type": "image/svg+xml"
+    }
+   }
+  }
+ },
+ "blobs": {},
+ "docs": {
+  "readme": "project/README.md",
+  "sections": []
+ },
+ "lastChange": {
+  "by": "Claude",
+  "at": "2026-09-25T06:10:00Z",
+  "via": "GitHub · kitanoimc-source/qr-frame@3ec3234",
+  "note": "Extracted from index.html: 26 colors, 13 text styles, spacing/radius/shadow/size scales, 12 components, 27 assets"
+ }
+}

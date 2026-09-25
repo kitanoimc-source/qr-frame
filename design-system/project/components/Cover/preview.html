@@ -1,0 +1,55 @@
+<!-- @dsCard height=288 -->
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>QR Frame</title>
+<style>
+  html, body { margin:0; height:100%; }
+  body { background:var(--bg); color:var(--text); font-family:var(--font-sans); overflow:hidden; }
+  .cover { position:relative; width:960px; height:288px; overflow:hidden; }
+  .art { position:absolute; top:0; left:480px; width:480px; height:288px; overflow:hidden; }
+  .art svg { display:block; width:480px; height:288px; }
+  .pink { fill:var(--pink); }
+  .sheet { fill:var(--sheet); }
+  .bar { fill:var(--sheet-bar); }
+  .white { fill:var(--tool-surface); }
+  .danger { fill:var(--danger); }
+  .idle { fill:var(--mode-idle); }
+  .on { fill:var(--mode-on); }
+  .ring { fill:var(--shutter-fill); stroke:var(--pink); stroke-width:var(--border-shutter); }
+  .r12 { rx:var(--radius-12); }
+  .r8 { rx:var(--radius-8); }
+  .words { position:absolute; left:var(--space-26); bottom:var(--space-26); max-width:440px; }
+  .name { margin:0; font-size:88px; line-height:.9; font-weight:700; letter-spacing:-.01em; color:var(--text); }
+  .tag { margin:var(--space-12) 0 0 3px; font-size:13px; line-height:20px; color:var(--dim); }
+</style>
+</head>
+<body>
+<div class="cover">
+<div class="art" aria-hidden="true">
+<svg viewBox="0 0 480 288" width="480" height="288">
+<!--
+  blocks      pink 120×150 slab bled off the top (the one accent, largest) · sheet 480×128 rising from the bottom edge with a sheet-bar band (the picker) · tool-surface 44×44 square · danger 34 disc, once (it only means delete)
+  arrangement the app's own composition: accent and tool up top, the sheet rising from the bottom, the dock sitting across the sheet's edge
+  pattern     literal motif — the viewfinder dock: two size-mode discs (mode-idle, mode-on) flanking one size-shutter ring stroked border-shutter in pink, chosen because the shutter ring is the product's one signature shape
+  scales      sheet top at 160 (space-96 + space-26×2 + space-12); gutters space-26; slab corners radius-12, tool radius-8; discs size-mode / size-ctl, ring size-shutter
+-->
+<rect class="pink r12" x="232" y="-24" width="120" height="150" rx="12"/>
+<rect class="white r8" x="378" y="26" width="44" height="44" rx="8"/>
+<circle class="danger" cx="232" cy="126" r="17"/>
+<rect class="sheet" x="0" y="160" width="480" height="140"/>
+<rect class="bar" x="0" y="160" width="480" height="36"/>
+<rect class="pink" x="52" y="160" width="130" height="36"/>
+<circle class="idle" cx="118" cy="250" r="24"/>
+<circle class="ring" cx="240" cy="244" r="36.5"/>
+<circle class="on" cx="362" cy="250" r="24"/>
+</svg>
+</div>
+<div class="words">
+  <p class="name">QR Frame</p>
+  <p class="tag">カメラの上に、フレームとスタンプを。</p>
+</div>
+</div>
+</body>
+</html>
