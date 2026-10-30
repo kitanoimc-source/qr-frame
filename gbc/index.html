@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#111111">
+<title>熊本菓房 × ガールズバンドクライ ARカメラ（デモ）</title>
+<style>
+:root{--bg:#111;--panel:#151515;--line:#2a2a2a;--accent:#e11e32;--txt:#f2f2f2;--sub:#9a9a9a;}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;overflow:hidden;overscroll-behavior:none;}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;}
+#app{position:fixed;inset:0;display:flex;flex-direction:column;}
+
+/* header */
+header{flex:none;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:calc(env(safe-area-inset-top) + 8px) 12px 8px;background:var(--bg);}
+.brand{font-size:11px;letter-spacing:.08em;color:var(--sub);line-height:1.3;}
+.brand b{display:block;color:var(--txt);font-size:13px;letter-spacing:.04em;}
+.badge{display:inline-block;background:var(--accent);color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:3px;margin-left:4px;vertical-align:1px;}
+.hbtn{width:40px;height:40px;border-radius:50%;background:#262626;display:grid;place-items:center;}
+.hbtn svg{width:22px;height:22px;fill:none;stroke:#fff;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+
+/* stage (= 撮影される範囲) */
+#stage{position:relative;flex:1;min-height:0;overflow:hidden;background:linear-gradient(160deg,#5d6875,#2c323a);touch-action:none;user-select:none;-webkit-user-select:none;}
+#video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
+#video.mirror{transform:scaleX(-1);}
+.frame{position:absolute;pointer-events:none;display:none;}
+#stamps{position:absolute;inset:0;}
+.stamp{position:absolute;left:0;top:0;transform-origin:50% 50%;will-change:transform;}
+.stamp img{width:100%;height:100%;display:block;pointer-events:none;-webkit-user-drag:none;}
+.stamp.sel{outline:2px dashed rgba(255,255,255,.9);outline-offset:4px;}
+#flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;transition:opacity .35s;}
+#selbar{position:absolute;top:10px;left:50%;transform:translateX(-50%);display:none;gap:6px;z-index:5;}
+#selbar button{white-space:nowrap;background:rgba(0,0,0,.72);border:1px solid rgba(255,255,255,.25);border-radius:999px;padding:6px 14px;font-size:12.5px;font-weight:700;}
+#selbar button.del{background:var(--accent);border-color:var(--accent);}
+#hint{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);background:rgba(0,0,0,.6);font-size:12px;padding:5px 12px;border-radius:999px;white-space:nowrap;pointer-events:none;transition:opacity .4s;opacity:0;z-index:4;}
+
+/* controls */
+#controls{flex:none;background:var(--panel);border-top:1px solid var(--line);padding:0 0 calc(env(safe-area-inset-bottom) + 10px);}
+#tabs{display:flex;justify-content:center;gap:4px;padding:8px 0 4px;}
+#tabs button{font-size:13px;font-weight:700;color:var(--sub);padding:6px 16px;border-radius:999px;}
+#tabs button.on{color:#fff;background:#2b2b2b;}
+.tray{display:none;gap:10px;overflow-x:auto;padding:6px 14px 8px;scrollbar-width:none;}
+.tray::-webkit-scrollbar{display:none;}
+.tray.on{display:flex;}
+.item{flex:none;width:64px;height:64px;border-radius:12px;background:#222;border:2px solid transparent;display:grid;place-items:center;overflow:hidden;position:relative;}
+.item img{max-width:88%;max-height:88%;object-fit:contain;}
+.item.frm{width:46px;height:78px;border-radius:8px;}
+.item.frm img{max-width:100%;max-height:100%;}
+.item.on{border-color:var(--accent);}
+.item .lbl{font-size:11px;color:var(--sub);}
+#shootrow{display:flex;align-items:center;justify-content:space-between;padding:4px 26px 0;}
+#shutter{width:68px;height:68px;border-radius:50%;border:4px solid #fff;display:grid;place-items:center;}
+#shutter span{width:52px;height:52px;border-radius:50%;background:#fff;transition:transform .1s;}
+#shutter:active span{transform:scale(.88);}
+.side{width:76px;font-size:11px;white-space:nowrap;color:var(--sub);text-align:center;}
+
+/* overlays */
+.ov{position:fixed;inset:0;z-index:20;background:rgba(10,10,10,.94);display:none;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;}
+.ov.on{display:flex;}
+#start img.logo{width:min(78vw,360px);filter:invert(1);margin-bottom:14px;}
+#start p{font-size:13.5px;color:#cfcfcf;line-height:1.8;margin:6px 0 20px;}
+.pbtn{background:var(--accent);color:#fff;font-weight:700;font-size:15px;padding:14px 34px;border-radius:999px;min-width:220px;}
+.sbtn{margin-top:12px;font-size:13px;color:#cfcfcf;text-decoration:underline;}
+#err{font-size:12.5px;color:#ff9c9c;margin-top:14px;line-height:1.7;display:none;}
+#result img{max-width:100%;max-height:62vh;border-radius:10px;box-shadow:0 6px 30px rgba(0,0,0,.6);-webkit-touch-callout:default;}
+#result .note{font-size:12px;color:var(--sub);margin:12px 0 14px;}
+#result .row{display:flex;flex-direction:column;gap:10px;align-items:center;}
+#result a.pbtn{text-decoration:none;display:inline-block;}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="brand"><b>ガールズバンドクライ × 熊本菓房</b>ARカメラ<span class="badge">DEMO</span></div>
+    <button class="hbtn" id="flip" aria-label="カメラ切替">
+      <svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><path d="M9.5 13.5a2.8 2.8 0 0 1 4.8-2"/><path d="M14.5 12.5a2.8 2.8 0 0 1-4.8 2"/><path d="M14.6 9.6v2h-2M9.4 16.4v-2h2"/></svg>
+    </button>
+  </header>
+
+  <div id="stage">
+    <video id="video" playsinline muted autoplay></video>
+    <img class="frame" id="frameTop" alt="">
+    <img class="frame" id="frameBottom" alt="">
+    <div id="stamps"></div>
+    <div id="selbar"><button id="bFront">前面へ</button><button id="bMirror">左右反転</button><button class="del" id="bDel">削除</button></div>
+    <div id="hint"></div>
+    <div id="flash"></div>
+  </div>
+
+  <div id="controls">
+    <div id="tabs">
+      <button data-tab="frame" class="on">フォトフレーム</button>
+      <button data-tab="stamp">スタンプ</button>
+    </div>
+    <div class="tray on" id="trayFrame"></div>
+    <div class="tray" id="trayStamp"></div>
+    <div id="shootrow">
+      <button class="side" id="bClear">全部消す</button>
+      <button id="shutter" aria-label="撮影"><span></span></button>
+      <div class="side" id="modeLbl"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 起動画面 -->
+<div class="ov on" id="start">
+  <img class="logo" src="assets/stamps/logo_white.webp" alt="ガールズバンドクライ" onerror="this.style.display='none'">
+  <p>カメラを使って、フォトフレームやスタンプで<br>オリジナル写真が撮れます。<br><small>※撮影画像はお使いの端末内だけで作られ、外部へ送信されません</small></p>
+  <button class="pbtn" id="bStart">カメラを起動する</button>
+  <button class="sbtn" id="bNoCam">カメラなしで試す</button>
+  <div id="err"></div>
+</div>
+
+<!-- 撮影結果 -->
+<div class="ov" id="result">
+  <img id="shot" alt="撮影した写真">
+  <div class="note" id="saveNote">iPhoneは写真を長押し →「"写真"に保存」でも保存できます</div>
+  <div class="row">
+    <button class="pbtn" id="bShare">保存・共有する</button>
+    <a class="pbtn" id="bDownload" download="gbc_kabou.jpg" style="display:none">画像を保存する</a>
+    <button class="sbtn" id="bRetake">撮り直す</button>
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   設定（ここを書き換えると内容を差し替えられます）
+   ========================================================= */
+const CONFIG = {
+  watermark: 'SAMPLE',          // 撮影画像の右下に入る文字。正式版では '' にする
+  credit: '',                   // 版権表記（例：'©〇〇'）。権利元の指定どおりに入れる
+  frameCap: 0.40,               // フレーム上下パーツの最大高さ（画面の40%まで）
+  defaultFrame: 'A'             // 最初に表示するフレーム（'none' で無し）
+};
+// フォトフレーム：top＝画面上端に固定、bottom＝画面下端に固定（null で無し）
+const FRAMES = [
+  { id:'none', name:'なし', thumb:null, top:null, bottom:null },
+  { id:'A', name:'集合A', thumb:'assets/thumbs/frameA.webp', top:'assets/frames/top_logo.webp', bottom:'assets/frames/bottom_groupA.webp' },
+  { id:'B', name:'集合B', thumb:'assets/thumbs/frameB.webp', top:'assets/frames/top_logo.webp', bottom:'assets/frames/bottom_groupB.webp' },
+  { id:'C', name:'ロゴ',  thumb:'assets/thumbs/frameC.webp', top:null, bottom:'assets/frames/bottom_logo.webp' }
+];
+// スタンプ：ファイル名（assets/stamps と assets/thumbs に同じ名前で置く）
+const STAMPS = ['logo','logo_white',
+  'chara1_bust','chara2_bust','chara3_bust','chara4_bust','chara5_bust',
+  'chara1_full','chara2_full','chara3_full','chara4_full','chara5_full',
+  'groupA','groupB'];
+/* ========================================================= */
+
+const $ = s => document.querySelector(s);
+const stage=$('#stage'), video=$('#video'), layer=$('#stamps');
+const fTop=$('#frameTop'), fBot=$('#frameBottom');
+const params=new URLSearchParams(location.search);
+const MODE=params.get('mode'); // 'frame' | 'stamp' | null(両方)
+let facing='user', stream=null, curFrame=null, stamps=[], sel=null, seq=0;
+const imgCache={};
+function loadImg(src){
+  if(!imgCache[src]) imgCache[src]=new Promise((ok,ng)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=ng;i.src=src;});
+  return imgCache[src];
+}
+
+/* ---------- モード（URLの ?mode= で単独表示） ---------- */
+function setTab(t){
+  document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));
+  $('#trayFrame').classList.toggle('on',t==='frame');
+  $('#trayStamp').classList.toggle('on',t==='stamp');
+}
+document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
+if(MODE==='frame'){ $('#tabs').style.display='none'; $('#bClear').style.visibility='hidden'; $('#modeLbl').textContent='フォトフレーム'; setTab('frame'); }
+if(MODE==='stamp'){ $('#tabs').style.display='none'; $('#modeLbl').textContent='スタンプ'; setTab('stamp'); CONFIG.defaultFrame='none'; }
+
+/* ---------- トレイ ---------- */
+FRAMES.forEach(f=>{
+  const b=document.createElement('button'); b.className='item frm'; b.dataset.id=f.id;
+  b.innerHTML=f.thumb?`<img src="${f.thumb}" alt="${f.name}" loading="lazy">`:`<span class="lbl">なし</span>`;
+  b.onclick=()=>setFrame(f.id); $('#trayFrame').appendChild(b);
+});
+STAMPS.forEach(n=>{
+  const b=document.createElement('button'); b.className='item';
+  b.innerHTML=`<img src="assets/thumbs/${n}.webp" alt="" loading="lazy">`;
+  b.onclick=()=>addStamp(n); $('#trayStamp').appendChild(b);
+});
+
+/* ---------- フレーム配置（画面表示と撮影で同じ計算） ---------- */
+function pieceRect(img,W,H,isTop){
+  let w=W, h=W*img.naturalHeight/img.naturalWidth;
+  const cap=H*CONFIG.frameCap; if(h>cap){h=cap; w=h*img.naturalWidth/img.naturalHeight;}
+  return {x:(W-w)/2, y:isTop?0:H-h, w, h};
+}
+function place(el,r){ Object.assign(el.style,{left:r.x+'px',top:r.y+'px',width:r.w+'px',height:r.h+'px'}); }
+async function setFrame(id){
+  curFrame=FRAMES.find(f=>f.id===id)||FRAMES[0];
+  document.querySelectorAll('#trayFrame .item').forEach(b=>b.classList.toggle('on',b.dataset.id===curFrame.id));
+  for(const [el,src] of [[fTop,curFrame.top],[fBot,curFrame.bottom]]){
+    if(!src){el.style.display='none';el.removeAttribute('src');continue;}
+    await loadImg(src); el.src=src; el.style.display='block';
+  }
+  layoutFrames();
+}
+function layoutFrames(){
+  const W=stage.clientWidth,H=stage.clientHeight;
+  if(fTop.style.display==='block'&&fTop.naturalWidth) place(fTop,pieceRect(fTop,W,H,true));
+  if(fBot.style.display==='block'&&fBot.naturalWidth) place(fBot,pieceRect(fBot,W,H,false));
+}
+addEventListener('resize',layoutFrames);
+
+/* ---------- スタンプ ---------- */
+async function addStamp(name){
+  const src=`assets/stamps/${name}.webp`; const img=await loadImg(src);
+  const W=stage.clientWidth,H=stage.clientHeight;
+  const box=Math.min(W,H)*0.5, ar=img.naturalWidth/img.naturalHeight;
+  let w=box, h=box/ar; if(h>H*0.55){h=H*0.55; w=h*ar;}
+  const off=(stamps.length%5)*14;
+  const s={id:++seq,src,img,x:W/2+off,y:H/2+off,w,h,s:1,r:0,m:1};
+  const el=document.createElement('div'); el.className='stamp'; el.dataset.id=s.id;
+  el.style.width=w+'px'; el.style.height=h+'px';
+  el.innerHTML=`<img src="${src}" alt="" draggable="false">`;
+  s.el=el; layer.appendChild(el); stamps.push(s); render(s); select(s);
+  showHint('1本指で移動 ／ 2本指で拡大・回転');
+}
+function render(s){ s.el.style.transform=`translate(${s.x-s.w/2}px,${s.y-s.h/2}px) rotate(${s.r}rad) scale(${s.s*s.m},${s.s})`; }
+function select(s){ stamps.forEach(t=>t.el.classList.toggle('sel',t===s)); sel=s; $('#selbar').style.display=s?'flex':'none'; }
+function removeStamp(s){ s.el.remove(); stamps=stamps.filter(t=>t!==s); select(null); }
+$('#bDel').onclick=()=>sel&&removeStamp(sel);
+$('#bFront').onclick=()=>{ if(!sel)return; stamps=stamps.filter(t=>t!==sel).concat(sel); layer.appendChild(sel.el); };
+$('#bMirror').onclick=()=>{ if(!sel)return; sel.m*=-1; render(sel); };
+$('#bClear').onclick=()=>{ stamps.forEach(s=>s.el.remove()); stamps=[]; select(null); };
+['pointerdown','touchstart'].forEach(ev=>$('#selbar').addEventListener(ev,e=>e.stopPropagation()));
+
+/* 指の操作（1本：移動／2本：拡大縮小・回転） */
+const pts=new Map(); let g=null;
+function baseline(){
+  if(!sel){g=null;return;}
+  const p=[...pts.values()];
+  if(p.length===1) g={n:1,p0:{...p[0]},x0:sel.x,y0:sel.y};
+  else if(p.length>=2){
+    const [a,b]=p; g={n:2,d0:Math.hypot(b.x-a.x,b.y-a.y)||1,a0:Math.atan2(b.y-a.y,b.x-a.x),
+      m0:{x:(a.x+b.x)/2,y:(a.y+b.y)/2},s0:sel.s,r0:sel.r,x0:sel.x,y0:sel.y};
+  }
+}
+stage.addEventListener('pointerdown',e=>{
+  const el=e.target.closest('.stamp');
+  if(el){ const s=stamps.find(t=>t.id==el.dataset.id); if(s!==sel){ pts.clear(); select(s);} }
+  else if(pts.size===0){ select(null); return; }       // 何もない所をタップ＝選択解除
+  if(!sel) return;
+  stage.setPointerCapture(e.pointerId);
+  pts.set(e.pointerId,{x:e.clientX,y:e.clientY}); baseline();
+});
+stage.addEventListener('pointermove',e=>{
+  if(!pts.has(e.pointerId)||!g||!sel) return;
+  pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  const p=[...pts.values()];
+  if(g.n===1&&p.length===1){ sel.x=g.x0+p[0].x-g.p0.x; sel.y=g.y0+p[0].y-g.p0.y; }
+  else if(g.n===2&&p.length>=2){
+    const [a,b]=p, d=Math.hypot(b.x-a.x,b.y-a.y), an=Math.atan2(b.y-a.y,b.x-a.x);
+    sel.s=Math.min(6,Math.max(0.15,g.s0*d/g.d0)); sel.r=g.r0+an-g.a0;
+    sel.x=g.x0+(a.x+b.x)/2-g.m0.x; sel.y=g.y0+(a.y+b.y)/2-g.m0.y;
+  }
+  render(sel);
+});
+['pointerup','pointercancel'].forEach(ev=>stage.addEventListener(ev,e=>{ if(pts.delete(e.pointerId)) baseline(); }));
+/* パソコン：ホイールで拡大縮小、Shift＋ホイールで回転 */
+stage.addEventListener('wheel',e=>{
+  if(!sel) return; e.preventDefault();
+  if(e.shiftKey) sel.r+=e.deltaY*0.003; else sel.s=Math.min(6,Math.max(0.15,sel.s*Math.exp(-e.deltaY*0.0015)));
+  render(sel);
+},{passive:false});
+document.addEventListener('gesturestart',e=>e.preventDefault()); // iOSの画面ズーム抑止
+
+let hintT; function showHint(t){ const h=$('#hint'); h.textContent=t; h.style.opacity=1; clearTimeout(hintT); hintT=setTimeout(()=>h.style.opacity=0,2600); }
+
+/* ---------- カメラ ---------- */
+async function startCamera(){
+  if(!navigator.mediaDevices?.getUserMedia) throw new Error('unsupported');
+  if(stream) stream.getTracks().forEach(t=>t.stop());
+  stream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:facing},width:{ideal:1920},height:{ideal:1080}}});
+  video.srcObject=stream; await video.play().catch(()=>{});
+  const st=stream.getVideoTracks()[0].getSettings?.()||{};
+  const isFront=(st.facingMode||facing)==='user';
+  video.classList.toggle('mirror',isFront);
+}
+function errMsg(e){
+  if(e&&e.name==='NotAllowedError') return 'カメラの使用が許可されませんでした。<br>ブラウザの設定でカメラを「許可」にして、ページを再読み込みしてください。';
+  if(e&&e.message==='unsupported') return 'このブラウザではカメラを使えません。<br>SafariまたはChromeで開いてください（LINE内で開いた場合は右上メニュー →「ブラウザで開く」）。';
+  return 'カメラを起動できませんでした（'+(e&&e.name||'不明')+'）。<br>SafariまたはChromeで開き直してください。';
+}
+$('#bStart').onclick=async()=>{
+  try{ await startCamera(); $('#start').classList.remove('on'); setFrame(CONFIG.defaultFrame); }
+  catch(e){ const el=$('#err'); el.innerHTML=errMsg(e); el.style.display='block'; }
+};
+$('#bNoCam').onclick=()=>{ $('#start').classList.remove('on'); $('#flip').style.visibility='hidden'; setFrame(CONFIG.defaultFrame); };
+$('#flip').onclick=async()=>{ facing=facing==='user'?'environment':'user'; try{await startCamera();}catch(e){ facing=facing==='user'?'environment':'user'; showHint('カメラを切り替えられませんでした'); } };
+
+/* ---------- 撮影（画面に見えている範囲をそのまま画像化） ---------- */
+let shotURL=null, shotFile=null;
+$('#shutter').onclick=async()=>{
+  select(null);
+  const W=stage.clientWidth,H=stage.clientHeight;
+  const k=Math.max(1,Math.min(window.devicePixelRatio||1,3,2560/Math.max(W,H)));
+  const c=document.createElement('canvas'); c.width=Math.round(W*k); c.height=Math.round(H*k);
+  const x=c.getContext('2d'); x.scale(k,k);
+  // 1) 背景（カメラ映像。画面と同じ object-fit: cover の切り抜き）
+  const vw=video.videoWidth, vh=video.videoHeight;
+  if(vw&&vh){
+    const sc=Math.max(W/vw,H/vh), dw=vw*sc, dh=vh*sc, dx=(W-dw)/2, dy=(H-dh)/2;
+    x.save(); if(video.classList.contains('mirror')){x.translate(W,0);x.scale(-1,1);} x.drawImage(video,dx,dy,dw,dh); x.restore();
+  }else{
+    const gr=x.createLinearGradient(0,0,W,H); gr.addColorStop(0,'#5d6875'); gr.addColorStop(1,'#2c323a'); x.fillStyle=gr; x.fillRect(0,0,W,H);
+  }
+  // 2) フレーム
+  if(curFrame){
+    if(curFrame.top){ const i=await loadImg(curFrame.top), r=pieceRect(i,W,H,true); x.drawImage(i,r.x,r.y,r.w,r.h); }
+    if(curFrame.bottom){ const i=await loadImg(curFrame.bottom), r=pieceRect(i,W,H,false); x.drawImage(i,r.x,r.y,r.w,r.h); }
+  }
+  // 3) スタンプ（重なり順どおり）
+  for(const s of stamps){ x.save(); x.translate(s.x,s.y); x.rotate(s.r); x.scale(s.s*s.m,s.s); x.drawImage(s.img,-s.w/2,-s.h/2,s.w,s.h); x.restore(); }
+  // 4) 透かし・版権表記
+  const mark=[CONFIG.credit,CONFIG.watermark].filter(Boolean).join('  ');
+  if(mark){ x.font='700 '+Math.max(11,W*0.03)+'px sans-serif'; x.textAlign='right'; x.textBaseline='bottom';
+    x.fillStyle='rgba(0,0,0,.45)'; x.fillText(mark,W-9,H-7); x.fillStyle='rgba(255,255,255,.85)'; x.fillText(mark,W-10,H-8); }
+  const fl=$('#flash'); fl.style.transition='none'; fl.style.opacity=.85; requestAnimationFrame(()=>{fl.style.transition='opacity .35s'; fl.style.opacity=0;});
+  c.toBlob(b=>{
+    if(shotURL) URL.revokeObjectURL(shotURL);
+    shotURL=URL.createObjectURL(b); shotFile=new File([b],'gbc_kabou.jpg',{type:'image/jpeg'});
+    $('#shot').src=shotURL;
+    const canShare=!!(navigator.canShare&&navigator.canShare({files:[shotFile]}));
+    $('#bShare').style.display=canShare?'inline-block':'none';
+    const dl=$('#bDownload'); dl.href=shotURL; dl.style.display=canShare?'none':'inline-block';
+    $('#result').classList.add('on');
+  },'image/jpeg',0.92);
+};
+$('#bShare').onclick=async()=>{ try{ await navigator.share({files:[shotFile]}); }catch(e){} };
+$('#bRetake').onclick=()=>$('#result').classList.remove('on');
+</script>
+</body>
+</html>
