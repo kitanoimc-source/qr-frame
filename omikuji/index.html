@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#e8e4dc">
+<title>お正月QRサブレ おみくじ（デモ）</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;overflow:hidden;background:#e8e4dc;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;user-select:none;-webkit-user-select:none;}
+button{font:inherit;border:0;background:none;cursor:pointer;color:inherit;}
+.scene{position:fixed;inset:0;overflow:hidden;display:none;}
+.scene.on{display:block;}
+
+/* 画像を画面いっぱい（cover）に置く入れ物。中の飾りは画像に対する％で配置 */
+.cover{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);}
+.cover>img.bg{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none;}
+
+/* ===== 1. 神社（扉が開く） ===== */
+#s1{background:#d9d4cc;cursor:pointer;}
+#s1 .cover{transition:transform 1.1s cubic-bezier(.6,0,.4,1);transform-origin:49.6% 62%;}
+#s1.zoom .cover{transform:translate(-50%,-50%) scale(4.2);}
+.doors{position:absolute;left:12.27%;top:49.58%;width:75.46%;height:26.93%;perspective:900px;}
+.glow{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 55%,rgba(255,236,170,1) 0%,rgba(255,200,90,.85) 30%,rgba(255,170,60,0) 70%);opacity:0;transition:opacity 1s ease .25s;}
+#s1.open .glow{opacity:1;}
+.door{position:absolute;top:0;width:50%;height:100%;transition:transform 1.25s cubic-bezier(.55,0,.25,1),opacity .5s ease 1s;
+  background:
+    linear-gradient(#a08f7d,#a08f7d) 0 58%/100% 3px no-repeat,
+    linear-gradient(180deg,transparent 60%,#b5a28c 60%,#ab9883 100%),
+    repeating-linear-gradient(90deg,#a08f7d 0 3px,transparent 3px 17%),
+    repeating-linear-gradient(0deg,#a08f7d 0 3px,transparent 3px 11%),
+    #141210;
+  border:5px solid #a08f7d;box-shadow:inset 0 0 0 1px rgba(0,0,0,.15);}
+.door.l{left:0;transform-origin:0 50%;clip-path:polygon(0 0,100% 0,100% 100%,12% 100%,12% 86%,0 86%);}
+.door.r{right:0;transform-origin:100% 50%;clip-path:polygon(0 0,100% 0,100% 86%,100% 86%,88% 86%,88% 100%,0 100%);}
+.door.l::after,.door.r::after{content:"";position:absolute;top:63%;width:6px;height:9%;background:#6b5a48;border-radius:3px;}
+.door.l::after{right:6px;} .door.r::after{left:6px;}
+#s1.open .door.l{transform:rotateY(78deg);opacity:0;}
+#s1.open .door.r{transform:rotateY(-78deg);opacity:0;}
+.tapring{position:absolute;left:49.6%;top:17.2%;width:34%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;
+  border:3px solid rgba(255,255,255,.9);animation:ring 1.6s ease-out infinite;pointer-events:none;}
+@keyframes ring{0%{transform:translate(-50%,-50%) scale(.6);opacity:.9}100%{transform:translate(-50%,-50%) scale(1.25);opacity:0}}
+#s1.open .tapring{display:none;}
+
+/* ===== 2. うさぎとおみくじ箱 ===== */
+#s2{background:#ffe600;cursor:pointer;}
+#s2 .cover{transform-origin:53% 75%;}
+#s2.on .cover{animation:enter2 .9s cubic-bezier(.2,.8,.3,1) both;}
+@keyframes enter2{0%{transform:translate(-50%,-50%) scale(1.25);opacity:0}100%{transform:translate(-50%,-50%) scale(1);opacity:1}}
+#s2.shake .cover{animation:shake .14s ease-in-out 8 alternate;}
+@keyframes shake{0%{transform:translate(-50%,-50%) rotate(-2.2deg)}100%{transform:translate(-50%,-50%) rotate(2.2deg) translateY(-6px)}}
+.stick{position:absolute;left:52.4%;top:44%;width:2.6%;height:15%;transform-origin:50% 100%;transform:scaleY(0);
+  background:linear-gradient(180deg,#d42027 0 16%,#f0d9a8 16% 100%);border-radius:3px 3px 1px 1px;box-shadow:0 0 0 2px #3a2a1a;}
+#s2.pop .stick{animation:pop .7s cubic-bezier(.3,1.6,.5,1) forwards;}
+@keyframes pop{0%{transform:scaleY(0)}100%{transform:scaleY(1)}}
+.spark{position:absolute;width:3.2%;aspect-ratio:1;pointer-events:none;
+  background:radial-gradient(circle,#fff 0 20%,rgba(255,255,255,0) 65%);animation:twinkle 1.8s ease-in-out infinite;}
+.spark::before,.spark::after{content:"";position:absolute;left:50%;top:50%;width:260%;height:16%;background:linear-gradient(90deg,transparent,#fff,transparent);transform:translate(-50%,-50%);}
+.spark::after{transform:translate(-50%,-50%) rotate(90deg);}
+@keyframes twinkle{0%,100%{opacity:0;transform:scale(.4)}50%{opacity:1;transform:scale(1)}}
+
+/* ===== 3. 結果 ===== */
+#s3{background:radial-gradient(ellipse at 50% 35%,#fffdf8 0%,#fbf2e2 70%,#f3e4c8 100%);}
+#s3 .stage{position:absolute;left:0;right:0;top:0;bottom:calc(86px + env(safe-area-inset-bottom));display:flex;align-items:center;justify-content:center;}
+#s3 .card{max-width:100%;max-height:100%;width:auto;height:100%;object-fit:contain;opacity:0;}
+#s3.on .card{animation:reveal 1.1s cubic-bezier(.2,1.2,.35,1) .1s forwards;}
+@keyframes reveal{0%{opacity:0;transform:translateY(40%) scale(.7) rotate(-8deg)}60%{opacity:1}100%{opacity:1;transform:none}}
+.bar{position:absolute;left:0;right:0;bottom:0;padding:14px 18px calc(14px + env(safe-area-inset-bottom));display:flex;gap:10px;justify-content:center;opacity:0;}
+#s3.on .bar{animation:fadein .5s ease 1.2s forwards;}
+@keyframes fadein{to{opacity:1}}
+.btn{flex:1;max-width:220px;height:52px;border-radius:999px;font-weight:700;font-size:15px;}
+.btn.main{background:#e60012;color:#fff;box-shadow:0 4px 0 #a5000d;}
+.btn.sub{background:#fff;color:#e60012;border:2px solid #e60012;}
+.btn:active{transform:translateY(2px);}
+.confetti{position:absolute;top:-4%;width:10px;height:14px;pointer-events:none;animation:fall linear forwards;}
+@keyframes fall{to{transform:translate3d(var(--dx),110vh,0) rotate(var(--rot));}}
+
+/* 共通 */
+.hint{position:fixed;left:50%;bottom:calc(28px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:5;
+  background:rgba(0,0,0,.62);color:#fff;font-size:14px;font-weight:700;padding:10px 20px;border-radius:999px;white-space:nowrap;
+  animation:bob 1.4s ease-in-out infinite;pointer-events:none;}
+@keyframes bob{0%,100%{transform:translate(-50%,0)}50%{transform:translate(-50%,-6px)}}
+#flash{position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:10;transition:opacity .45s ease;}
+#flash.on{opacity:1;}
+.credit{position:fixed;left:0;right:0;bottom:calc(6px + env(safe-area-inset-bottom));text-align:center;font-size:10px;color:#555;z-index:4;display:none;pointer-events:none;}
+#s1.cropped .credit{display:block;}
+#s1.cropped .hint{bottom:calc(40px + env(safe-area-inset-bottom));}
+.badge{position:fixed;left:10px;top:calc(env(safe-area-inset-top) + 10px);z-index:9;background:#e60012;color:#fff;font-size:10px;font-weight:700;letter-spacing:.08em;padding:2px 7px;border-radius:3px;opacity:.85;}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01s!important;transition-duration:.01s!important;}}
+</style>
+</head>
+<body>
+<span class="badge">DEMO</span>
+
+<!-- 1. 神社：タップで扉が開く -->
+<section class="scene on" id="s1" aria-label="神社">
+  <div class="cover" data-ar="383/843">
+    <img class="bg" src="assets/shrine.webp" alt="">
+    <div class="doors"><div class="glow"></div><div class="door l"></div><div class="door r"></div></div>
+    <div class="tapring"></div>
+  </div>
+  <div class="hint" id="hint1">タップして運試し</div>
+  <div class="credit">Copyright©RITZPRINT. All Rights Reserved.</div>
+</section>
+
+<!-- 2. うさぎ：タップで箱をふる -->
+<section class="scene" id="s2" aria-label="おみくじ箱">
+  <div class="cover" data-ar="1080/1920">
+    <img class="bg" src="assets/omikuji_box.webp" alt="おみくじ箱を持ったうさぎ">
+    <div class="stick"></div>
+    <i class="spark" style="left:6%;top:52%;animation-delay:.2s"></i>
+    <i class="spark" style="left:88%;top:47%;animation-delay:.9s"></i>
+    <i class="spark" style="left:14%;top:75%;animation-delay:1.3s"></i>
+    <i class="spark" style="left:82%;top:72%;animation-delay:.5s"></i>
+  </div>
+  <div class="hint" id="hint2">おみくじ箱をタップしてふってね</div>
+</section>
+
+<!-- 3. 結果 -->
+<section class="scene" id="s3" aria-label="おみくじの結果">
+  <div class="stage"><img class="card" id="card" alt=""></div>
+  <div class="bar">
+    <button class="btn sub" id="bAgain">もう一度ひく</button>
+    <button class="btn main" id="bSave">画像を保存</button>
+  </div>
+</section>
+
+<div id="flash"></div>
+
+<script>
+/* =========================================================
+   設定（ここを書き換えると内容を差し替えられます）
+   ========================================================= */
+const CONFIG = {
+  oncePerDay: false        // true にすると1日1回だけ（同じ日は同じ結果を表示）
+};
+// 結果一覧：file＝画像のファイル名、weight＝出やすさ（数字が大きいほど出やすい）
+const RESULTS = [
+  { id:'ebisu',       name:'恵比寿天', weight:1 },
+  { id:'daikokuten',  name:'大黒天',   weight:1 },
+  { id:'bishamonten', name:'毘沙門天', weight:1 },
+  { id:'benzaiten',   name:'弁財天',   weight:1 },
+  { id:'fukurokuju',  name:'福禄寿',   weight:1 },
+  { id:'jurojin',     name:'寿老人',   weight:1 },
+  { id:'hoteison',    name:'布袋尊',   weight:1 }
+];
+/* ========================================================= */
+
+const $=s=>document.querySelector(s);
+const scenes={1:$('#s1'),2:$('#s2'),3:$('#s3')};
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+const preload=src=>new Promise(ok=>{const i=new Image();i.onload=i.onerror=()=>ok(i);i.src=src;});
+
+/* 画像を画面いっぱいに（cover）表示する大きさを計算 */
+function fitCovers(){
+  const W=innerWidth,H=innerHeight;
+  document.querySelectorAll('.cover').forEach(c=>{
+    const [a,b]=c.dataset.ar.split('/').map(Number), ar=a/b;
+    let w=W,h=W/ar; if(h<H){h=H;w=H*ar;}
+    c.style.width=w+'px'; c.style.height=h+'px';
+    // 神社画像の下端（著作権表記）が画面外に切れる場合は、表記を画面下に重ねて表示
+    if(c.closest('#s1')) $('#s1').classList.toggle('cropped',(h-H)/2>8);
+  });
+}
+addEventListener('resize',fitCovers); fitCovers();
+
+/* 抽選（重み付きランダム） */
+function draw(){
+  const today=new Date().toISOString().slice(0,10);
+  if(CONFIG.oncePerDay){
+    try{const s=JSON.parse(localStorage.getItem('omikuji')||'null'); if(s&&s.day===today) return RESULTS.find(r=>r.id===s.id)||RESULTS[0];}catch(e){}
+  }
+  const total=RESULTS.reduce((t,r)=>t+r.weight,0); let n=Math.random()*total, pick=RESULTS[0];
+  for(const r of RESULTS){ if((n-=r.weight)<0){pick=r;break;} }
+  if(CONFIG.oncePerDay){ try{localStorage.setItem('omikuji',JSON.stringify({day:today,id:pick.id}));}catch(e){} }
+  return pick;
+}
+let result=draw();
+let ready=preload(`assets/results/${result.id}.webp`);
+preload('assets/omikuji_box.webp');
+
+function show(n){ Object.entries(scenes).forEach(([k,el])=>el.classList.toggle('on',+k===n)); }
+async function flashTo(n){ const f=$('#flash'); f.classList.add('on'); await wait(450); show(n); await wait(60); f.classList.remove('on'); }
+
+/* 1 → 2：扉が開いて中へ */
+let busy=false;
+scenes[1].addEventListener('click',async()=>{
+  if(busy) return; busy=true;
+  $('#hint1').style.display='none';
+  scenes[1].classList.add('open'); await wait(1300);
+  scenes[1].classList.add('zoom'); await wait(700);
+  await flashTo(2);
+  scenes[1].classList.remove('open','zoom');
+  busy=false;
+});
+
+/* 2 → 3：箱をふる → 棒が出る → 結果 */
+scenes[2].addEventListener('click',async()=>{
+  if(busy) return; busy=true;
+  $('#hint2').style.display='none';
+  if(navigator.vibrate) navigator.vibrate([40,60,40,60,40]);
+  scenes[2].classList.add('shake'); await wait(1150);
+  scenes[2].classList.remove('shake'); scenes[2].classList.add('pop'); await wait(900);
+  await ready;
+  $('#card').src=`assets/results/${result.id}.webp`; $('#card').alt=`おみくじの結果：${result.name}`;
+  await flashTo(3);
+  confetti();
+  scenes[2].classList.remove('pop'); $('#hint2').style.display='';
+  busy=false;
+});
+
+/* 紙吹雪 */
+function confetti(){
+  const colors=['#e60012','#f5a623','#ffd400','#3cb44b','#2f80ed','#ff7eb6'];
+  for(let i=0;i<46;i++){
+    const c=document.createElement('i'); c.className='confetti';
+    c.style.left=Math.random()*100+'%'; c.style.background=colors[i%colors.length];
+    c.style.setProperty('--dx',(Math.random()*120-60)+'px'); c.style.setProperty('--rot',(Math.random()*900-450)+'deg');
+    c.style.animationDuration=(1.8+Math.random()*1.6)+'s'; c.style.animationDelay=(Math.random()*.5)+'s';
+    if(i%3===0){c.style.borderRadius='50%';c.style.width=c.style.height='9px';}
+    scenes[3].appendChild(c); setTimeout(()=>c.remove(),4200);
+  }
+}
+
+/* もう一度（神社から） */
+$('#bAgain').addEventListener('click',async()=>{
+  if(CONFIG.oncePerDay){ alertBox('おみくじは1日1回です。また明日ひいてね'); return; }
+  result=draw(); ready=preload(`assets/results/${result.id}.webp`);
+  $('#hint1').style.display=''; await flashTo(1);
+});
+function alertBox(t){ const h=document.createElement('div'); h.className='hint'; h.textContent=t; document.body.appendChild(h); setTimeout(()=>h.remove(),2600); }
+
+/* 画像を保存（iPhoneは共有シート→「画像を保存」） */
+$('#bSave').addEventListener('click',async()=>{
+  const url=`assets/save/${result.id}.jpg`;
+  try{
+    const blob=await (await fetch(url)).blob();
+    const file=new File([blob],`omikuji_${result.id}.jpg`,{type:'image/jpeg'});
+    if(navigator.canShare&&navigator.canShare({files:[file]})){ await navigator.share({files:[file]}); return; }
+  }catch(e){ if(e&&e.name==='AbortError') return; }
+  const a=document.createElement('a'); a.href=url; a.download=`omikuji_${result.id}.jpg`; document.body.appendChild(a); a.click(); a.remove();
+});
+</script>
+</body>
+</html>
